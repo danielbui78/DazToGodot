@@ -42,7 +42,9 @@ DzGodotAction::DzGodotAction() :
 {
 	m_nNonInteractiveMode = 0;
 	m_sAssetType = QString("SkeletalMesh");
-	QString iconName = "icon";
+
+	//Setup Icon
+	QString iconName = "Daz to Godot";
 	QPixmap basePixmap = QPixmap::fromImage(getEmbeddedImage(iconName.toLatin1()));
 	QIcon icon;
 	icon.addPixmap(basePixmap, QIcon::Normal, QIcon::Off);
