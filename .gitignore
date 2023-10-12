@@ -1,0 +1,9 @@
+venv
+.idea
+__pycache__
+.vscode
+*.blend1
+.vs
+out
+CMakeSettings.json
+.DS_Store

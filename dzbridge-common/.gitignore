@@ -1,0 +1,10 @@
+.vs
+out
+CMakeSettings.json
+.DS_Store
+x64/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+moc_*.cpp
