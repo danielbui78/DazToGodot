@@ -18,7 +18,10 @@ class DzGodotAction : public DZ_BRIDGE_NAMESPACE::DzBridgeAction {
 public:
 	DzGodotAction();
 
+	Q_INVOKABLE bool executeBlenderScripts(QString sFilePath, QString sCommandlineArguments);
+
 protected:
+	 unsigned char m_nPythonExceptionExitCode = 11; // arbitrary exit code to check for blener python exceptions
 
 	 void executeAction();
 	 Q_INVOKABLE bool createUI();

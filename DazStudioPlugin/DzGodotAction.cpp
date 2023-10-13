@@ -207,14 +207,52 @@ void DzGodotAction::executeAction()
 
 		exportHD(exportProgress);
 
+		// run blender scripts
+		QString sBlenderPath = QString("C:/Program Files/Blender Foundation/Blender 3.6/blender.exe");
+		QString sBlenderLogPath = QString("%1/blender.log").arg(m_sDestinationPath);
+		QString sScriptPath = QString("C:/Github/DazToGodot/BlenderScripts/blender_dtu_to_godot.py");
+		QString sCommandArgs = QString("--background;--log-file;%1;--python;%2;--python-exit-code;%3;%4").arg(sBlenderLogPath).arg(sScriptPath).arg(m_nPythonExceptionExitCode).arg(m_sDestinationFBX);
+		bool retCode = executeBlenderScripts(sBlenderPath, sCommandArgs);
+
 		// DB 2021-10-11: Progress Bar
 		exportProgress->finish();
 
 		// DB 2021-09-02: messagebox "Export Complete"
 		if (m_nNonInteractiveMode == 0)
 		{
-			QMessageBox::information(0, "Daz To Godot Bridge",
-				tr("Export phase from Daz Studio complete. Please switch to Godot to begin Import phase."), QMessageBox::Ok);
+			if (retCode)
+			{
+				QMessageBox::information(0, "Daz To Godot Bridge",
+					tr("Export phase from Daz Studio complete. Please switch to Godot to begin Import phase."), QMessageBox::Ok);
+
+#ifdef WIN32
+				ShellExecuteA(NULL, "open", m_sGodotProjectFolderPath.toLocal8Bit().data(), NULL, NULL, SW_SHOWDEFAULT);
+				//// The above line does the equivalent as following lines, but has advantage of only opening 1 explorer window
+				//// with multiple clicks.
+				//
+				//	QStringList args;
+				//	args << "/select," << QDir::toNativeSeparators(sIntermediateFolderPath);
+				//	QProcess::startDetached("explorer", args);
+				//
+#elif defined(__APPLE__)
+				QStringList args;
+				args << "-e";
+				args << "tell application \"Finder\"";
+				args << "-e";
+				args << "activate";
+				args << "-e";
+				args << "select POSIX file \"" + m_sGodotProjectFolderPath + "\"";
+				args << "-e";
+				args << "end tell";
+				QProcess::startDetached("osascript", args);
+#endif
+			}
+			else
+			{
+				QMessageBox::critical(0, "Daz To Godot Bridge",
+					tr(QString("An error occured during the export process.  Please check log files at: %1").arg(m_sDestinationPath).toLocal8Bit()), QMessageBox::Ok);
+			}
+
 		}
 
 	}
@@ -331,6 +369,79 @@ bool DzGodotAction::readGui(DZ_BRIDGE_NAMESPACE::DzBridgeDialog* BridgeDialog)
 		m_sGodotProjectFolderPath = "";
 	}
 
+	return true;
+}
+
+bool DzGodotAction::executeBlenderScripts(QString sFilePath, QString sCommandlineArguments)
+{
+	DzProgress::setCurrentInfo("DazToGodot: Running Blender Scripts....");
+
+	//////
+	// CHECK VERTEX COUNT
+	// 1. load fbx
+	// 2. get controlpointscount
+	// 3. if not same as source proxy, exit
+	//////
+
+	int nTransferSteps = 200;
+	int nTransferSubSteps = 200;
+
+	// fork or spawn child process
+	//QDir dirpath = QDir(sFilePath);
+	//dirpath.cdUp();
+	//QString sWorkingPath = dirpath.path();
+	QString sWorkingPath = m_sDestinationPath;
+	QStringList args = sCommandlineArguments.split(";");
+
+	//int numArgs = args.count();
+	//for (QString arg : args)
+	//{
+	//	dzApp->log("DEBUG: " + arg);
+	//	printf("nop");
+	//}
+	//QStringList args;
+	//args.append("--bsp_file");
+	//args.append("\sPluginPath + "template_export.bsp\"");
+	//args.append("--source_morph");
+	//args.append("\sPluginPath + "daz_proxy.fbx\"");
+	//args.append("--output");
+	//args.append("\sPluginPath + "morph_output.fbx\"");
+
+	float fTimeoutInSeconds = 2.3 * 60;
+	float fMilliSecondsPerTick = 200;
+	int numTotalTicks = fTimeoutInSeconds * 1000 / fMilliSecondsPerTick;
+	DzProgress* progress = new DzProgress("Running Blender Scripts", numTotalTicks, false, true);
+	progress->enable(true);
+	QProcess* pToolProcess = new QProcess(this);
+	pToolProcess->setWorkingDirectory(sWorkingPath);
+	pToolProcess->start(sFilePath, args);
+	while (pToolProcess->waitForFinished(fMilliSecondsPerTick) == false) {
+		if (pToolProcess->state() == QProcess::Running)
+		{
+			progress->step();
+		}
+		else
+		{
+			break;
+		}
+	}
+	progress->finish();
+	delete progress;
+	int exitCode = pToolProcess->exitCode();
+	if (exitCode != 0)
+	{
+		if (exitCode == m_nPythonExceptionExitCode)
+		{
+			printf("Python error:.... %i", exitCode);
+		}
+		else
+		{
+			printf("ERROR: exit code = %i", exitCode);
+		}
+		return false;
+	}
+	// find and retrieve path to result file
+	//printf("DEBUG: exit code = %i", exitCode);
 	return true;
 }
 

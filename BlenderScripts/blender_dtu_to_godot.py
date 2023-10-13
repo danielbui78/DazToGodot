@@ -19,7 +19,7 @@ EXAMPLE:
     C:/Blender3.6/blender.exe --background --python blender_dtu_to_godot.py C:/Users/dbui/Documents/DazToGodot/Amelia9YoungAdult/Amelia9YoungAdult.fbx
 
 """
-logFilename = "blender_dtu_to_vrm.log"
+logFilename = "blender_dtu_to_godot.log"
 
 ## Do not modify below
 def _print_usage():
@@ -33,6 +33,7 @@ import sys
 import os
 import json
 import re
+import shutil
 try:
     import bpy
 except:
@@ -51,7 +52,7 @@ def _add_to_log(sMessage):
 
 def _main(argv):
     try:
-        line = str(argv[0])
+        line = str(argv[-1])
     except:
         _print_usage()
         return
@@ -84,9 +85,7 @@ def _main(argv):
 
     # prepare destination folder path
     blenderFilePath = fbxPath.replace(".fbx", ".blend")
-    destinationPath = os.path.dirname(blenderFilePath)
-    if (not os.path.exists(destinationPath)):
-        os.makedirs(destinationPath)
+    intermediate_folder_path = os.path.dirname(fbxPath)
 
     # remove missing images
     for image in bpy.data.images:
@@ -100,14 +99,53 @@ def _main(argv):
     bpy.ops.wm.save_as_mainfile(filepath=blenderFilePath)
 
     # export to binary gltf (.glb) file
-    blender_tools.process_dtu(jsonPath)
+    dtu_dict = blender_tools.process_dtu(jsonPath)
+    godot_asset_name = dtu_dict["Asset Name"]
+    godot_project_path = dtu_dict["Godot Project Folder"]
+    if (godot_project_path == ""):
+        godot_project_path = os.path.join(intermediate_folder_path, "godot_project").replace("\\","/")
+    godot_asset_type = dtu_dict["Asset Type"]
+    _add_to_log("DEBUG: main(): godot_asset_name=" + str(godot_asset_name) 
+                + ", godot_project_path=" + str(godot_project_path) 
+                + ", godot_asset_type=" + str(godot_asset_type))
 
-    gltfFilePath = fbxPath.replace(".fbx", ".glb")
-    destinationPath = os.path.dirname(gltfFilePath)
+    gltf_filename = os.path.basename(fbxPath).replace(".fbx", ".glb")
+    destinationPath = os.path.join(godot_project_path, godot_asset_name).replace("\\","/")
     if (not os.path.exists(destinationPath)):
         os.makedirs(destinationPath)
-    bpy.ops.export_scene.gltf(filepath=gltfFilePath, export_format="GLTF_SEPARATE", export_texture_dir="Textures", use_visible=True, use_selection=True)
-    bpy.ops.export_scene.gltf(filepath=gltfFilePath, export_format="GLB", use_visible=True, use_selection=True)
+    gltfFilePath = os.path.join(destinationPath, gltf_filename).replace("\\","/")
+
+    # Copy files to godot project folder:    
+    if "blend" in godot_asset_type.lower():
+        destination_texture_folder = os.path.join(destinationPath, "Textures").replace("\\","/")
+        if (not os.path.exists(destination_texture_folder)):
+            os.makedirs(destination_texture_folder)
+        # copy and re-assign textures
+        _add_to_log("DEBUG: copying textures to destination...")
+        for image in bpy.data.images:
+            if image.filepath:
+                imagePath = bpy.path.abspath(image.filepath)
+                if (not os.path.exists(imagePath)):
+                    bpy.data.images.remove(image)
+                else:
+                    ## copy to blender destination Folder
+                    imageFileName = os.path.basename(imagePath)
+                    imageDestinationPath = os.path.join(destination_texture_folder, imageFileName).replace("\\","/")
+                    if (os.path.exists(imageDestinationPath)):
+                        _add_to_log("DEBUG: image already exists at " + imageDestinationPath + ", deleting...")
+                        os.remove(imageDestinationPath)
+                    _add_to_log("DEBUG: copying image from " + imagePath + " to " + imageDestinationPath)
+                    shutil.copy(imagePath, imageDestinationPath)
+                    image.filepath = imageDestinationPath
+        # copy .blend file and textures to godo project folder
+        blend_destination_path = gltfFilePath.replace(".glb", ".blend")
+        bpy.ops.wm.save_as_mainfile(filepath=blend_destination_path)
+    elif "glb" in godot_asset_type.lower():
+        # save GLB file to godot project folder
+        bpy.ops.export_scene.gltf(filepath=gltfFilePath, export_format="GLB", use_visible=True, use_selection=True)
+    elif "gltf" in godot_asset_type.lower():
+        # save GLTF file to godot project folder, specify textures folder
+        bpy.ops.export_scene.gltf(filepath=gltfFilePath.replace(".glb", ".gltf"), export_format="GLTF_SEPARATE", export_texture_dir="Textures", use_visible=True, use_selection=True)
 
     _add_to_log("DEBUG: main(): completed conversion for: " + str(fbxPath))
 
@@ -115,5 +153,7 @@ def _main(argv):
 # Execute main()
 if __name__=='__main__':
     print("Starting script...")
+    _add_to_log("Starting script... DEBUG: sys.argv=" + str(sys.argv))
     _main(sys.argv[4:])
     print("script completed.")
+    exit(0)

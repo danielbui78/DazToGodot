@@ -397,7 +397,6 @@ def process_material(mat, lowres_mode=None):
                 print("ERROR: process_dtu(): cutout map file does not exist, skipping...")
             else:
                 # create image texture node
-                nodes = data.node_tree.nodes
                 node_tex = nodes.new("ShaderNodeTexImage")
                 node_tex.image = bpy.data.images.load(cutoutMap)
                 node_tex.image.colorspace_settings.name = "Non-Color"
@@ -408,10 +407,9 @@ def process_material(mat, lowres_mode=None):
                 link = links.new(node_tex.outputs["Alpha"], node_math.inputs[0])
                 link = links.new(node_math.outputs[0], bsdf_inputs["Alpha"])
 
-    if nodes is not None:
-        remove_unlinked_shader_nodes(matName)
-        NodeArrange.toNodeArrange(nodes)
-
+    remove_unlinked_shader_nodes(matName)
+    NodeArrange.toNodeArrange(data.node_tree.nodes)
+    _add_to_log("DEBUG: process_dtu(): done processing material: " + matName)
 
 def process_dtu(jsonPath, lowres_mode=None):
     _add_to_log("DEBUG: process_dtu(): json file = " + jsonPath)
@@ -435,6 +433,7 @@ def process_dtu(jsonPath, lowres_mode=None):
         process_material(mat, lowres_mode)
 
     print("DEBUG: process_dtu(): done processing DTU: " + jsonPath)
+    return jsonObj
 
 def import_fbx(fbxPath):
     _add_to_log("DEBUG: import_fbx(): fbx file = " + fbxPath)
