@@ -75,7 +75,7 @@ def _main(argv):
 
     # load FBX
     blender_tools.import_fbx(fbxPath)
-    # blender_tools.fix_eyes()
+    blender_tools.fix_eyes()
     blender_tools.fix_scalp()
 
     blender_tools.center_all_viewports()
@@ -106,7 +106,8 @@ def _main(argv):
     destinationPath = os.path.dirname(gltfFilePath)
     if (not os.path.exists(destinationPath)):
         os.makedirs(destinationPath)
-    bpy.ops.export_scene.gltf(filepath=gltfFilePath, export_format="GLB")
+    bpy.ops.export_scene.gltf(filepath=gltfFilePath, export_format="GLTF_SEPARATE", export_texture_dir="Textures", use_visible=True, use_selection=True)
+    bpy.ops.export_scene.gltf(filepath=gltfFilePath, export_format="GLB", use_visible=True, use_selection=True)
 
     _add_to_log("DEBUG: main(): completed conversion for: " + str(fbxPath))
 

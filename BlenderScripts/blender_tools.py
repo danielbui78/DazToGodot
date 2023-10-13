@@ -54,10 +54,19 @@ def daz_color_to_rgb(color):
     
 def fix_eyes():
     for mat in bpy.data.materials:
-        if "tear" in mat.name.lower() or "moisture" in mat.name.lower():
-            print("DEBUG: fix_eyes(): mat found: " + mat.name)
-            mat.blend_method = "HASHED"
-            mat.node_tree.nodes["Principled BSDF"].inputs["Alpha"].default_value = 0.05
+        # if "tear" in mat.name.lower() or "moisture" in mat.name.lower():
+        #     print("DEBUG: fix_eyes(): mat found: " + mat.name)
+        #     mat.blend_method = "HASHED"
+        #     mat.node_tree.nodes["Principled BSDF"].inputs["Alpha"].default_value = 0.05
+        # fix all other eye materials to avoid conflict with tear/moisture
+        if ("eye" in mat.name.lower().split(" ")
+            and "moisture" not in mat.name.lower() 
+            and "tear" not in mat.name.lower() 
+            and "brow" not in mat.name.lower() 
+            and "lash" not in mat.name.lower()):
+            if mat.blend_method == "BLEND" or mat.blend_method == "HASHED":
+                _add_to_log("DEBUG: fix_eyes(): mat found: " + mat.name)
+                mat.blend_method = "CLIP"
 
 def fix_scalp():
     for mat in bpy.data.materials:
@@ -163,7 +172,7 @@ def process_material(mat, lowres_mode=None):
                 specular_weight_map = property["Texture"]
                 if lowres_mode is not None:
                     specular_weight_map = swap_lowres_filename(specular_weight_map, lowres_mode)
-                print("DEBUG: process_dtu(): dual lobe specular weight = " + str(dual_lobe_specular_weight) + ", specular weight map = " + specular_weight_map)
+                _add_to_log("DEBUG: process_dtu(): dual lobe specular weight = " + str(dual_lobe_specular_weight) + ", specular weight map = " + specular_weight_map)
             elif property["Name"] == "Dual Lobe Specular Reflectivity":
                 if property["Value"] != 0.0:
                     reflectivity_value = property["Value"]
@@ -171,7 +180,7 @@ def process_material(mat, lowres_mode=None):
                     reflectivity_map = property["Texture"]
                     if lowres_mode is not None:
                         reflectivity_map = swap_lowres_filename(reflectivity_map, lowres_mode)
-                print("DEBUG: process_dtu(): dual lobe specular reflectivity = " + str(reflectivity_value) + ", specular reflectivity map = " + reflectivity_map)
+                _add_to_log("DEBUG: process_dtu(): dual lobe specular reflectivity = " + str(reflectivity_value) + ", specular reflectivity map = " + reflectivity_map)
             elif property["Name"] == "Specular Lobe 1 Roughness":
                 if property["Value"] != 0.0:
                     roughness_value = property["Value"]
@@ -179,13 +188,13 @@ def process_material(mat, lowres_mode=None):
                     roughnessMap = property["Texture"]
                     if lowres_mode is not None:
                         roughnessMap = swap_lowres_filename(roughnessMap, lowres_mode)
-                print("DEBUG: process_dtu(): specular lobe 1 roughness = " + str(roughness_value) + ", roughness map = " + roughnessMap)
+                _add_to_log("DEBUG: process_dtu(): specular lobe 1 roughness = " + str(roughness_value) + ", roughness map = " + roughnessMap)
             elif property["Name"] == "Glossy Layered Weight":
                 glossy_weight = property["Value"]
                 glossy_weight_map = property["Texture"]
                 if lowres_mode is not None:
                     glossy_weight_map = swap_lowres_filename(glossy_weight_map, lowres_mode)
-                print("DEBUG: process_dtu(): glossy weight = " + str(glossy_weight) + ", glossy weight map = " + glossy_weight_map)
+                _add_to_log("DEBUG: process_dtu(): glossy weight = " + str(glossy_weight) + ", glossy weight map = " + glossy_weight_map)
             elif property["Name"] == "Glossy Reflectivity":
                 if property["Value"] != 0.0:
                     reflectivity_value = property["Value"]
@@ -193,7 +202,7 @@ def process_material(mat, lowres_mode=None):
                     reflectivity_map = property["Texture"]
                     if lowres_mode is not None:
                         reflectivity_map = swap_lowres_filename(reflectivity_map, lowres_mode)
-                print("DEBUG: process_dtu(): glossy reflectivity = " + str(reflectivity_value) + ", reflectivity map = " + reflectivity_map)
+                _add_to_log("DEBUG: process_dtu(): glossy reflectivity = " + str(reflectivity_value) + ", reflectivity map = " + reflectivity_map)
             elif property["Name"] == "Glossy Roughness":
                 if property["Value"] != 0.0:
                     roughness_value = property["Value"]
@@ -201,7 +210,7 @@ def process_material(mat, lowres_mode=None):
                     roughnessMap = property["Texture"]
                     if lowres_mode is not None:
                         roughnessMap = swap_lowres_filename(roughnessMap, lowres_mode)
-                print("DEBUG: process_dtu(): glossy roughness = " + str(roughness_value) + ", roughness map = " + roughnessMap)
+                _add_to_log("DEBUG: process_dtu(): glossy roughness = " + str(roughness_value) + ", roughness map = " + roughnessMap)
             elif property["Name"] == "Emission Color":
                 emission_property = property
                 emissionMap = property["Texture"]
@@ -227,12 +236,12 @@ def process_material(mat, lowres_mode=None):
         _add_to_log("ERROR: process_dtu(): unable to retrieve extra maps: " + str(e))
         raise e
 
-    _add_to_log("DEBUG: process_dtu(): matname=" + matName)
-    _add_to_log("DEBUG: process_dtu(): c map = \"" + str(colorMap) + "\"")
-    _add_to_log("DEBUG: process_dtu(): m map = \"" + str(metallicMap) + "\"")
-    _add_to_log("DEBUG: process_dtu(): r map = \"" + str(roughnessMap) + "\"")
-    _add_to_log("DEBUG: process_dtu(): e map = \"" + str(emissionMap) + "\"")
-    _add_to_log("DEBUG: process_dtu(): n map = \"" + str(normalMap) + "\"")
+    # _add_to_log("DEBUG: process_dtu(): matname=" + matName)
+    # _add_to_log("DEBUG: process_dtu(): c map = \"" + str(colorMap) + "\"")
+    # _add_to_log("DEBUG: process_dtu(): m map = \"" + str(metallicMap) + "\"")
+    # _add_to_log("DEBUG: process_dtu(): r map = \"" + str(roughnessMap) + "\"")
+    # _add_to_log("DEBUG: process_dtu(): e map = \"" + str(emissionMap) + "\"")
+    # _add_to_log("DEBUG: process_dtu(): n map = \"" + str(normalMap) + "\"")
 
     data = bpy.data.materials[matName]
     # get Principled BSDF Shader inputs
@@ -363,12 +372,22 @@ def process_material(mat, lowres_mode=None):
                 links.new(mapping_node.outputs["Vector"], node.inputs["Vector"])      
 
     if (cutoutMap != ""):
-        data.blend_method = "HASHED"
+        if data.blend_method == "OPAQUE" or data.blend_method == "BLEND":
+            data.blend_method = "HASHED"
 
     if (refraction_weight != 0.0):
-        data.blend_method = "HASHED"
-        new_value = (1.0 - bsdf_inputs["Alpha"].default_value) * 15 / refraction_weight
-        bsdf_inputs["Alpha"].default_value = new_value
+        if data.blend_method == "OPAQUE" or data.blend_method == "BLEND":
+            data.blend_method = "HASHED"
+        if bsdf_inputs["Alpha"].default_value > 0.75:
+            new_value = (1.0 - bsdf_inputs["Alpha"].default_value)
+            if new_value < 0.01:
+                new_value = new_value * 15 / refraction_weight
+            else:
+                new_value = new_value / refraction_weight
+            if new_value > bsdf_inputs["Alpha"].default_value:
+                new_value = bsdf_inputs["Alpha"].default_value
+            bsdf_inputs["Alpha"].default_value = new_value
+        _add_to_log("DEBUG: process_dtu(): refraction weight = " + str(refraction_weight) + ", alpha = " + str(bsdf_inputs["Alpha"].default_value))
         bsdf_inputs["Roughness"].default_value = bsdf_inputs["Roughness"].default_value * (1-refraction_weight)
         bsdf_inputs["Specular"].default_value = bsdf_inputs["Specular"].default_value * (1-refraction_weight)
         if bsdf_inputs["Metallic"].default_value < refraction_weight:
