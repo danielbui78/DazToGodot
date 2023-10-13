@@ -1,8 +1,0 @@
-
-
-=======================
-Automated Test Results:
-=======================
-
-
-Test Case 1: PASSED
