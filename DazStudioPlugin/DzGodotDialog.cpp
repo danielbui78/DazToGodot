@@ -460,14 +460,26 @@ void DzGodotDialog::HandleSelectBlenderExecutablePathButton()
 	{
 		directoryName = QFileInfo(settings->value("BlenderExecutablePath").toString()).dir().dirName();
 	}
-	QString fileName = QFileDialog::getOpenFileName(this, 
+#ifdef WIN32
+    QString sExeFilter = tr("Executable Files (*.exe)");
+#elif defined(__APPLE__)
+    QString sExeFilter = tr("Application Bundle (*.app)");
+#endif
+    QString fileName = QFileDialog::getOpenFileName(this,
 		tr("Select Blender Executable"),
 		directoryName,
-		tr("Executable Files (*.exe)"), 
-		&tr("Executable Files (*.exe)"),
+		sExeFilter,
+		&sExeFilter,
 		QFileDialog::ReadOnly |
 		QFileDialog::DontResolveSymlinks);
 
+#if defined(__APPLE__)
+    if (fileName != "")
+    {
+        fileName = fileName + "/Contents/MacOS/Blender";
+    }
+#endif
+            
 	if (fileName != "")
 	{
 		m_wBlenderExecutablePathEdit->setText(fileName);

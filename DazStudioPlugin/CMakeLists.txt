@@ -78,7 +78,6 @@ if(WIN32)
 else()
 	target_compile_definitions(${DZ_PLUGIN_TGT_NAME}
 		PUBLIC
-		$<$<CONFIG:DEBUG>:UNITTEST_DZBRIDGE>
 		${DZBRIDGE_LIB_FLAGS}
 		__LEGACY_PATHS__
 	)

@@ -11,7 +11,10 @@ class UnitTest_DzGodotAction;
 
 #include "dzbridge.h"
 
-class DZ_BRIDGE_NAMESPACE::DzBridgeDialog;
+namespace DZ_BRIDGE_NAMESPACE
+{
+    class DzBridgeDialog;
+}
 
 class DzGodotAction : public DZ_BRIDGE_NAMESPACE::DzBridgeAction {
 	 Q_OBJECT
@@ -32,7 +35,8 @@ protected:
 
 	 QString m_sGodotProjectFolderPath = "";
 	 QString m_sBlenderExecutablePath = "";
-
+     int m_nBlenderExitCode = 0;
+    
 #ifdef UNITTEST_DZBRIDGE
 	friend class UnitTest_DzGodotAction;
 #endif
