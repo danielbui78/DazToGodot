@@ -1,8 +1,8 @@
 // DAZ Studio version 4.16.0.3 filetype DAZ Script
 var includeDir_oFILE = new DzFile( getScriptFileName() );
 //var sIncludePath = includeDir_oFILE.path();
-var sIncludePath = "C:/GitHub/DazToBlender-daz3d/Test/UnitTests/"
-var sOutputPath = "C:/GitHub/DazToBlender-daz3d/Test/Results/";
+var sIncludePath = "C:/GitHub/DazToGodot/Test/UnitTests/"
+var sOutputPath = "C:/GitHub/DazToGodot/Test/Results/";
 
 /*
 obj = new UnitTest_DzBridgeScriptableAction();
@@ -30,14 +30,14 @@ print("Unit Test Results (DzBridgeSubdivisionDialog): " + result);
 obj.writeAllTestResults(sOutputPath);
 */
 
-obj = new UnitTest_DzBlenderAction();
+obj = new UnitTest_DzGodotAction();
 result = false;
 result = obj.runUnitTests();
-print("Unit Test Results (DzBlenderAction): " + result);
+print("Unit Test Results (DzGodotAction): " + result);
 obj.writeAllTestResults(sOutputPath);
 
-obj = new UnitTest_DzBlenderDialog();
+obj = new UnitTest_DzGodotDialog();
 result = false;
 result = obj.runUnitTests();
-print("Unit Test Results (DzBlenderDialog): " + result);
+print("Unit Test Results (DzGodotDialog): " + result);
 obj.writeAllTestResults(sOutputPath);

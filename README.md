@@ -1,10 +1,10 @@
-# Daz To Blender Bridge
-A Daz Studio Plugin based on Daz Bridge Library, allowing transfer of Daz Studio characters and props to Blender.
+# Daz To Godot Bridge
+A Daz Studio Plugin based on Daz Bridge Library, allowing transfer of Daz Studio Genesis characters to Godot.
 
 * Owner: [Daz 3D][OwnerURL] – [@Daz3d][TwitterURL]
 * License: [Apache License, Version 2.0][LicenseURL] - see ``LICENSE`` and ``NOTICE`` for more information.
-* Offical Release: [Daz to Blender Bridge][ProductURL]
-* Official Project: [github.com/daz3d/DazToBlender][RepositoryURL]
+* Offical Release: [Daz to Godot Bridge][ProductURL]
+* Official Project: [github.com/daz3d/DazToGodot][RepositoryURL]
 
 
 ## Table of Contents
@@ -19,74 +19,51 @@ A Daz Studio Plugin based on Daz Bridge Library, allowing transfer of Daz Studio
 
 
 ## 1. About the Bridge
-This is a refactored version of the original DazToBlender Bridge using the Daz Bridge Library as a foundation. Using the Bridge Library allows it to share source code and features with other bridges such as the refactored DazToUnity and DazToBlender bridges. This will improve development time and quality of all bridges.
+The Daz To Godot Bridge can convert and transfer Genesis 9 characters to the Godot game engine in GLB, GLTF or BLEND file formats.  This plugin began as a heavily modified version of the DazToBlender
+Bridge which required the user to run Blender as an intermediate stage between Daz and Godot.  To improve the user experience, the Daz To Godot Bridge was redesigned to perform all of the required Blender operations in the background without user interaction.  While it still uses the Daz Bridge Library as a foundation on the Daz Studio side, there are no requireqments to install a Blender plugin.
 
-The Daz To Blender Bridge consists of two parts: a Daz Studio plugin which exports assets to Blender and a Blender Plugin which contains scripts and other resources to help recreate the look of the original Daz Studio asset in Blender.
+The Daz To Godot Bridge consists of two parts: a Daz Studio plugin which exports converted assets to an intermediate folder, and a set of python automation scripts which automatically run Blender to perform
+additional conversion steps before transferring assets to the Godot game engine.  Once in Godot, the character can be modified and saved from Blender and automatically updated within the Godot scene.
 
 
 ## 2. Prerequisites
 - A compatible version of the [Daz Studio][DazStudioURL] application
-  - Minimum: 4.10
+  - Minimum: 4.20
+- A compatible version of the [Godot][GodotURL] application
+  - Minimum: 3 to use GLB/GLTF files
+  - Minimum: 4 to use BLEND files
 - A compatible version of the [Blender][BlenderURL] application
-  - Minimum: 2.83 LTS
+  - Minimum: 3.6
 - Operating System:
   - Windows 7 or newer
-  - macOS 10.13 (High Sierra) or newer
+  - macOS 10.15 (Catalina) or newer
 
 
 ## 3. How to Install
 ### Daz Studio ###
-- You can install the Daz To Blender Bridge automatically through the Daz Install Manager or Daz Central.  This will automatically add a new menu option under File -> Send To -> Daz To Blender.
+- You can install the Daz To Godot Bridge automatically through the Daz Install Manager or Daz Central.  This will automatically add a new menu option under File -> Send To -> Daz To Godot.
 - Alternatively, you can manually install by downloading the latest build from Github Release Page and following the instructions there to install into Daz Studio.
-
-### Blender ###
-1. The Daz Studio Plugin now comes embedded with an installer for Blender.  From the Daz To Blender Bridge Dialog, there is now section in the Advanced Settings section for Installing the Blender Plugin.
-2. Select your Blender Version from the drop down menu.  If your Blender version is not directly supported by this drop-down or you have a custom plugins folder, then select "Custom Addon Path".
-3. Then click the "Install Plugin" button.  If you selected a supported version of Blender, you should see a popup dialog box confirming if the Blender plugin was successfully installed for your version of Blender.  Be sure to restart Blender after installing the Blender Plugin.
-4. From Blender, open the Blender Preferences window by selecting Edit -> Preferences from the Blender main menu. 
-5. In the Blender Preferences window, click on the Addons button found along the left side of the window.
-6. Scroll down the list of add-ons, and look for "Import-Export: DazToBlender".  Check the box next to "Import-Export: DazToBlender" to enable the plugin.  A DazToBlender tab should now appear on the Blender "Tool-shelf" which are a set of vertical tabs along the right edge of the Blender viewport window.
-
-The following steps are for people who wish to use the "Custom Addon Path" installation option.
-
-1. If you chose "Custom Addon Path", you will see a window popup to choose a custom Scripts or Addons folder.  The starting folder path will be the location where Blender stores preferences and files for each version of Blender.  
-2. If you are using an unsupported version of Blender, you should see a subfolder corresponding to your version from the starting folder path.  Open that folder and select the scripts folder.  Then click "Select Folder".
-3. If you have configured a custom Scripts path from the Blender Preferences window, then you may navigate to that folder and click "Select Folder".  You will then see a confirmation dialog stating if the plugin installation was successful.
+- Before using Daz to Godot for the first time, you will also need to configure the path to your Blender executable by opening the Advanced Settings section of the Daz To Godot Bridge, then locating
+the Blender Executable section, clicking the "..." button and navigating to and selecting your Blender Executable.
 
 
 ## 4. How to Use
 1. Open your character in Daz Studio.
 2. Make sure any clothing or hair is parented to the main body.
 3. From the main menu, select File -> Send To -> Daz To Blender.
-4. A dialog will pop up: choose what type of conversion you wish to do, "Static Mesh" (no skeleton), "Skeletal Mesh" (Character or with joints), or "Animation".
+4. A dialog will pop up: choose what type of conversion you wish to do, "Godot BLEND" will use the BLEND file format but requires Godot 4+, "Godot GLTF" supports Godot 3 and saves textures externally to a Textures folder, or "Godot GLB" will embed all textures within the GLB file however Godot will extract all textures again by default, resulting in longer import times than either BLEND or GLTF.
 5. To enable Morphs or Subdivision levels, click the CheckBox to Enable that option, then click the "Choose Morphs" or "Bake  Subdivisions" button to configure your selections.
-6. Click Accept, then wait for a dialog popup to notify you when to switch to Blender.
-7. From Blender, click the "DazToBlender" tab from the Blender toolshelf, located along the right-edge of the Blender viewport.
-8. For Daz Characters or other assets transferred with the "Skeletal Mesh" option, select `Import New Genesis Figure`.  For props or other assets transferred using the "Static Mesh" option, select `Import New Env/Prop`.
-
-### Morphs ###
-- If you enabled the Export Morphs option, you will see sliders for each Morph in the "Morphs List" section of the DazToBlender toolshelf.
-
-### Animation ###
-- To use the "Animation" asset type option, your Figure must use animations on the Daz Studio "Timeline" system.  
-- If you are using "aniMate" or "aniBlocks" based animations, you need to right-click in the "aniMate" panel and select "Bake To Studio Keyframes".  
-- Once your animation is on the "Timeline" system, you can start the transfer using File -> Send To -> Daz To Blender.  
-- The transferred animation should now be usable through the Blender Animation interface.
-
-### Subdivision Support ###
-- Daz Studio uses Catmull-Clark Subdivision Surface technology which is a mathematical way to describe an infinitely smooth surface in a very efficient manner. Similar to how an infinitely smooth circle can be described with just the radius, the base resolution mesh of a Daz Figure is actually the mathematical data in an equation to describe an infinitely smooth surface. For Software which supports Catmull-Clark Subdivision and subdivision surface-based morphs (also known as HD Morphs), there is no loss in quality or detail by exporting the base resolution mesh (subdivision level 0).
-- For Software which does not fully support Catmull-Clark Subdivision or HD Morphs, we can "Bake" additional subdivision detail levels into the mesh to more closely approximate the detail of the original surface. However, baking each additional subdivision level requires exponentially more CPU time, memory, and storage space.
-- Since version 2.8, Blender has built-in Catmull-Clark Subdivision Surface support like Daz Studio. This is much faster and should be used instead of baking out subdivision levels during the Bridge Export process.
-- Blender Subdivision is fully supported by modern Daz Figures which will transfer to Blender as a fully compatible level 0 subdivision surface, ready for subdivision operations through Blender.  
-- You can find out more about Blender's built-in Subdivision Support here: https://docs.blender.org/manual/en/3.1/modeling/modifiers/generate/subdivision_surface.html
+6. Click Accept, then wait for a dialog popup to notify you when to switch to Godot.
+7. The assets will be copied into a subfolder inside your Godot project folder.
+8. If using GLTF or GLB format files, a BLEND "source file" can be found inside the DazToGodot Intermediate Folder which can be modified in Blender and re-exported into the Godot project.  If you overwrite the existing GLTF or GLB file, then Godot will automatically detect changes and reimport the file and update the scene -- similar to the BLEND file.
 
 
 ## 5. How to Build
-Requirements: Daz Studio 4.5+ SDK, Qt 4.8.1, Autodesk Fbx SDK, Pixar OpenSubdiv Library, CMake, C++ development environment
+Requirements: Daz Studio 4.5+ SDK, Autodesk Fbx SDK 2020.1 on Windows or 2015 on Mac, Pixar OpenSubdiv Library, CMake, C++ development environment
 
-Download or clone the DazToBlender github repository to your local machine. The Daz Bridge Library is linked as a git submodule to the DazBridge repository. Depending on your git client, you may have to use `git submodule init` and `git submodule update` to properly clone the Daz Bridge Library.
+Download or clone the DazToGodot github repository to your local machine. The Daz Bridge Library is linked as a git submodule to the DazBridge repository. Depending on your git client, you may have to use `git submodule init` and `git submodule update` to properly clone the Daz Bridge Library.
 
-Use CMake to configure the project files. Daz Bridge Library will be automatically configured to static-link with DazToBlender. If using the CMake gui, you will be prompted for folder paths to dependencies: Daz SDK, Qt 4.8.1, Fbx SDK and OpenSubdiv during the Configure process.
+Use CMake to configure the project files. Daz Bridge Library will be automatically configured to static-link with DazToBlender. If using the CMake gui, you will be prompted for folder paths to dependencies: Daz SDK, Fbx SDK and OpenSubdiv during the Configure process.  NOTE: Use only the version of Qt 4.8 included with the Daz SDK.  Any external Qt 4.8 installations will most likely be incompatible with Daz Studio development.
 
 
 ## 6. How to QA Test
@@ -105,41 +82,26 @@ Special Note: The QA Report Files generated by the UnitTest and TestCase scripts
 
 
 ## 7. How to Modify and Develop
-The Daz Studio Plugin source code is contained in the `DazStudioPlugin` folder. The Blender Plugin source code and resources are available in the `/Blender/appdata_common/Blender Foundation/Blender/BLENDER_VERSION/scripts/addons/DTB` folder.
+The Daz Studio Plugin source code is contained in the `DazStudioPlugin` folder. The Blender python source code is in the `BlenderScripts` folder.  Currently, the python files need to be zip compressed into a file named `scripts.zip` and placed in the `DazStudioPlugin/Resources` folder prior to building the DLL.  The `scripts.zip` will be embedded into the `dzgodotbridge.dll` plugin file.
 
-The DazToBlender Bridge uses a branch of the Daz Bridge Library which is modified to use the `DzBlenderNS` namespace. This ensures that there are no C++ Namespace collisions when other plugins based on the Daz Bridge Library are also loaded in Daz Studio. In order to link and share C++ classes between this plugin and the Daz Bridge Library, a custom `CPP_PLUGIN_DEFINITION()` macro is used instead of the standard DZ_PLUGIN_DEFINITION macro and usual .DEF file. NOTE: Use of the DZ_PLUGIN_DEFINITION macro and DEF file use will disable C++ class export in the Visual Studio compiler.
+The DazToGodot Bridge uses a branch of the Daz Bridge Library which is modified to use the `DzGodotNS` namespace. This ensures that there are no C++ Namespace collisions when other plugins based on the Daz Bridge Library are also loaded in Daz Studio. In order to link and share C++ classes between this plugin and the Daz Bridge Library, a custom `CPP_PLUGIN_DEFINITION()` macro is used instead of the standard DZ_PLUGIN_DEFINITION macro and usual .DEF file. NOTE: Use of the DZ_PLUGIN_DEFINITION macro and DEF file use will disable C++ class export in the Visual Studio compiler.
 
 
 ## 8. Directory Structure
-Within the Blender directory are hierarchies of subdirectories that correspond to locations on the target machine. Portions of the hierarchy are consistent between the supported platforms and should be replicated exactly while others serve as placeholders for locations that vary depending on the platform of the target machine.
-
-Placeholder directory names used in this repository are:
-
-Name  | Windows  | macOS
-------------- | ------------- | -------------
-appdata_common  | Equivalent to the expanded form of the `%AppData%` environment variable.  Sub-hierarchy is common between 32-bit and 64-bit architectures. | Equivalent to the `~/Library/Application Support` directory.  Sub-hierarchy is common between 32-bit and 64-bit architectures.
-appdir_common  | The directory containing the primary executable (.exe) for the target application.  Sub-hierarchy is common between 32-bit and 64-bit architectures.  | The directory containing the primary application bundle (.app) for the target application.  Sub-hierarchy is common between 32-bit and 64-bit architectures.
-BLENDER_VERSION  | The directory named according to the version of the Blender application - see [Blender Documentation][BlenderDocsURL] - e.g., "2.80", "2.83", etc.  | Same on both platforms.
-
 The directory structure is as follows:
 
-- `Blender`:                  Files that pertain to the _Blender_ side of the bridge
-  - `appdata_common`:         See table above
-    - `Blender Foundation`:   Application data specific to the organization
-**^ Note:** _this level of the hierarchy is not present on macOS_ **^**
-      - `Blender`:            Application data specific to the application
-        - `BLENDER_VERSION`:  See table above
-          - `...`:            Remaining sub-hierarchy
-- `DazStudioPlugin`:          Files that pertain to the _Daz Studio_ side of the DazToBlender bridge
-- `dzbridge-common`:          Files from the Daz Bridge Library used by DazStudioPlugin
+- `BlenderScripts`:           Python automation scripts which are automatically run by the Daz Studio plugin.
+- `DazStudioPlugin`:          Files that pertain to the Daz Studio plugin.
+- `dzbridge-common`:          Files from the Daz Bridge Library used by Daz Studio plugin.
 - `Test`:                     Scripts and generated output (reports) used for Quality Assurance Testing.
 
 [OwnerURL]: https://www.daz3d.com
 [TwitterURL]: https://twitter.com/Daz3d
 [LicenseURL]: http://www.apache.org/licenses/LICENSE-2.0
-[ProductURL]: https://www.daz3d.com/daz-to-blender-bridge
-[RepositoryURL]: https://github.com/daz3d/DazToBlender/
+[ProductURL]: https://www.daz3d.com/daz-to-godot-bridge
+[RepositoryURL]: https://github.com/daz3d/DazToGodot/
 [DazStudioURL]: https://www.daz3d.com/get_studio
-[ReleasesURL]: https://github.com/daz3d/DazToBlender/releases
+[ReleasesURL]: https://github.com/daz3d/DazToGodot/releases
+[GodotURL]: https://godotengine.org/download
 [BlenderURL]: https://www.blender.org/download
-[BlenderDocsURL]: https://docs.blender.org/manual/en/latest/advanced/blender_directory_layout.html#platform-dependent-paths
+

@@ -3,10 +3,10 @@
 
 ======= UnitTest Summary =======
 
-Class Name: DzBlenderDialog
+Class Name: DzGodotDialog
 Number of UnitTests: 6
 
-[ 0] _DzBridgeBlenderDialog:...............[ PASSED ]
+[ 0] _DzBridgeGodotDialog:.................[ PASSED ]
 [ 1] getIntermediateFolderEdit:............[ PASSED ]
 [ 2] resetToDefaults:......................[ PASSED ]
 [ 3] loadSavedSettings:....................[ PASSED ]

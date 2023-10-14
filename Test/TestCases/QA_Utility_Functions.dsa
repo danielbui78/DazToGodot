@@ -289,7 +289,8 @@ function Validate_LIE_Textures(nNumLIETextures, sNameFilters, sDTUpath)
 function Run_Exporter(sExportFilename, sAssetType, sRootFolder, sExportFolder, sProductName, sComponentName, arrayMorphList)
 {
 //	var oBridge = new DzUnrealAction();
-	var oBridge = new DzBlenderAction();
+//	var oBridge = new DzBlenderAction();
+	var oBridge = new DzGodotAction();
 //	var oBridge = new DzBridgeScriptableAction();
 	oBridge.resetToDefaults();
 

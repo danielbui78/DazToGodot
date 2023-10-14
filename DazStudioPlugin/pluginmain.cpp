@@ -26,7 +26,7 @@ NEW_PLUGIN_CUSTOM_CLASS_GUID(DzGodotDialog, ab0c9f63-4adc-4a6c-bc55-41bc2a4eccb3
 #include "UnitTest_DzGodotAction.h"
 #include "UnitTest_DzGodotDialog.h"
 
-DZ_PLUGIN_CLASS_GUID(UnitTest_DzGodotAction, 6a463c62-cf71-4162-840d-7e668d0af218);
-DZ_PLUGIN_CLASS_GUID(UnitTest_DzGodotDialog, 96225142-26d8-475f-b9b4-ef7662dbe52f);
+DZ_PLUGIN_CLASS_GUID(UnitTest_DzGodotAction, baac50b7-2e87-402c-b345-57e4a12d51b8);
+DZ_PLUGIN_CLASS_GUID(UnitTest_DzGodotDialog, b99e3988-a2b6-4c1d-a830-2c2732842075);
 
 #endif

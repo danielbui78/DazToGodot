@@ -1,41 +1,41 @@
 {
 	"UnitTest Results Version" : 1,
-	"Class Name" : "DzBlenderDialog",
+	"Class Name" : "DzGodotAction",
 	"Number of UnitTests" : 6,
 	"Detailed Test Results" : [
 		{
 			"UnitTest ID" : 0,
-			"Method Name" : "_DzBridgeBlenderDialog",
+			"Method Name" : "_DzBridgeGodotAction",
 			"Test Result" : true,
 			"Test Log" : ""
 		},
 		{
 			"UnitTest ID" : 1,
-			"Method Name" : "getIntermediateFolderEdit",
+			"Method Name" : "executeAction",
 			"Test Result" : true,
 			"Test Log" : ""
 		},
 		{
 			"UnitTest ID" : 2,
-			"Method Name" : "resetToDefaults",
+			"Method Name" : "createUI",
 			"Test Result" : true,
 			"Test Log" : ""
 		},
 		{
 			"UnitTest ID" : 3,
-			"Method Name" : "loadSavedSettings",
+			"Method Name" : "writeConfiguration",
 			"Test Result" : true,
 			"Test Log" : ""
 		},
 		{
 			"UnitTest ID" : 4,
-			"Method Name" : "HandleSelectIntermediateFolderButton",
+			"Method Name" : "setExportOptions",
 			"Test Result" : true,
 			"Test Log" : ""
 		},
 		{
 			"UnitTest ID" : 5,
-			"Method Name" : "HandleAssetTypeComboChange",
+			"Method Name" : "readGuiRootFolder",
 			"Test Result" : true,
 			"Test Log" : ""
 		}
