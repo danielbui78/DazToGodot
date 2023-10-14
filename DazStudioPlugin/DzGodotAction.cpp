@@ -326,8 +326,28 @@ void DzGodotAction::executeAction()
 		DzBridgeAction::copyFile(&srcFile, &tempPathArchive, replace);
 		srcFile.close();
 		::zip_extract(tempPathArchive.toAscii().data(), dzApp->getTempPath().toAscii().data(), nullptr, nullptr);
+
+        // search for override files in folder with DLL and copy over extracted files
+        QString sPluginFolder = dzApp->getPluginsPath() + "/DazToGodot";
+        if (QDir(sPluginFolder).exists() == false)
+        {
+            sPluginFolder = dzApp->getPluginsPath();
+        }
+        QStringList aOverrideFilenameList = (QStringList() << "blender_dtu_to_godot.py" << "blender_tools.py" <<"NodeArrange.py");
+        foreach(QString filename, aOverrideFilenameList)
+        {
+            QString sOverrideFilePath = sPluginFolder + "/" + filename;
+            QString sTempFilePath = dzApp->getTempPath() + "/" + filename;
+            if (QFileInfo(sOverrideFilePath).exists())
+            {
+                dzApp->log(QString("Found override file (%1), copying to temp folder.").arg(sOverrideFilePath));
+                QFile(sTempFilePath).remove();
+                QFile(sOverrideFilePath).copy(sTempFilePath);
+            }
+        }
+        
 		QString sScriptPath = dzApp->getTempPath() + "/blender_dtu_to_godot.py";
-		QString sCommandArgs = QString("--background;--log-file;%1;--python;%2;--python-exit-code;%3;%4").arg(sBlenderLogPath).arg(sScriptPath).arg(m_nPythonExceptionExitCode).arg(m_sDestinationFBX);
+		QString sCommandArgs = QString("--background;--log-file;%1;--python-exit-code;%2;--python;%3;%4").arg(sBlenderLogPath).arg(m_nPythonExceptionExitCode).arg(sScriptPath).arg(m_sDestinationFBX);
 		bool retCode = executeBlenderScripts(m_sBlenderExecutablePath, sCommandArgs);
 
 		// DB 2021-10-11: Progress Bar
@@ -357,7 +377,7 @@ void DzGodotAction::executeAction()
 				args << "-e";
 				args << "activate";
 				args << "-e";
-				args << "select POSIX file \"" + m_sGodotProjectFolderPath + "\"";
+				args << "select POSIX file \"" + m_sGodotProjectFolderPath + "/." + "\"";
 				args << "-e";
 				args << "end tell";
 				QProcess::startDetached("osascript", args);
@@ -366,7 +386,7 @@ void DzGodotAction::executeAction()
 			else
 			{
 				QMessageBox::critical(0, "Daz To Godot Bridge",
-					tr(QString("An error occured during the export process.  Please check log files at: %1").arg(m_sDestinationPath).toLocal8Bit()), QMessageBox::Ok);
+					tr(QString("An error occured during the export process (ExitCode=%1).  Please check log files at: %2").arg(m_nBlenderExitCode).arg(m_sDestinationPath).toLocal8Bit()), QMessageBox::Ok);
 			}
 
 		}
@@ -496,36 +516,9 @@ bool DzGodotAction::executeBlenderScripts(QString sFilePath, QString sCommandlin
 {
 	DzProgress::setCurrentInfo("DazToGodot: Running Blender Scripts....");
 
-	//////
-	// CHECK VERTEX COUNT
-	// 1. load fbx
-	// 2. get controlpointscount
-	// 3. if not same as source proxy, exit
-	//////
-
-	int nTransferSteps = 200;
-	int nTransferSubSteps = 200;
-
 	// fork or spawn child process
-	//QDir dirpath = QDir(sFilePath);
-	//dirpath.cdUp();
-	//QString sWorkingPath = dirpath.path();
 	QString sWorkingPath = m_sDestinationPath;
 	QStringList args = sCommandlineArguments.split(";");
-
-	//int numArgs = args.count();
-	//for (QString arg : args)
-	//{
-	//	dzApp->log("DEBUG: " + arg);
-	//	printf("nop");
-	//}
-	//QStringList args;
-	//args.append("--bsp_file");
-	//args.append("\sPluginPath + "template_export.bsp\"");
-	//args.append("--source_morph");
-	//args.append("\sPluginPath + "daz_proxy.fbx\"");
-	//args.append("--output");
-	//args.append("\sPluginPath + "morph_output.fbx\"");
 
 	float fTimeoutInSeconds = 2.3 * 60;
 	float fMilliSecondsPerTick = 200;
@@ -547,21 +540,20 @@ bool DzGodotAction::executeBlenderScripts(QString sFilePath, QString sCommandlin
 	}
 	progress->finish();
 	delete progress;
-	int exitCode = pToolProcess->exitCode();
-	if (exitCode != 0)
+	m_nBlenderExitCode = pToolProcess->exitCode();
+	if (m_nBlenderExitCode != 0)
 	{
-		if (exitCode == m_nPythonExceptionExitCode)
+		if (m_nBlenderExitCode == m_nPythonExceptionExitCode)
 		{
-			printf("Python error:.... %i", exitCode);
+			dzApp->log(QString("ERROR: DazToGodot: Python error:.... %1").arg(m_nBlenderExitCode));
 		}
 		else
 		{
-			printf("ERROR: exit code = %i", exitCode);
+            dzApp->log(QString("ERROR: DazToGodot: exit code = %1").arg(m_nBlenderExitCode));
 		}
 		return false;
 	}
-	// find and retrieve path to result file
-	//printf("DEBUG: exit code = %i", exitCode);
+
 	return true;
 }
 

@@ -71,7 +71,7 @@ def fix_eyes():
 def fix_scalp():
     for mat in bpy.data.materials:
         if "scalp" in mat.name.lower() or "cap" in mat.name.lower():
-            print("DEBUG: fix_scalp(): mat found: " + mat.name)
+            _add_to_log("DEBUG: fix_scalp(): mat found: " + mat.name)
             mat.blend_method = "CLIP"
             mat.use_backface_culling = True
             mat.show_transparent_back = False
@@ -98,12 +98,12 @@ def remove_unlinked_shader_nodes(mat_name):
     # Get the material
     material = bpy.data.materials.get(mat_name)
     if not material:
-        print(f"Material {mat_name} not found.")
+        _add_to_log(f"Material {mat_name} not found.")
         return
     # Get the node tree
     node_tree = material.node_tree
     if not node_tree:
-        print(f"Material {mat_name} has no node tree.")
+        _add_to_log(f"Material {mat_name} has no node tree.")
         return
     # Get the nodes collection
     nodes = node_tree.nodes
@@ -172,7 +172,7 @@ def process_material(mat, lowres_mode=None):
                 specular_weight_map = property["Texture"]
                 if lowres_mode is not None:
                     specular_weight_map = swap_lowres_filename(specular_weight_map, lowres_mode)
-                _add_to_log("DEBUG: process_dtu(): dual lobe specular weight = " + str(dual_lobe_specular_weight) + ", specular weight map = " + specular_weight_map)
+                # _add_to_log("DEBUG: process_dtu(): dual lobe specular weight = " + str(dual_lobe_specular_weight) + ", specular weight map = " + specular_weight_map)
             elif property["Name"] == "Dual Lobe Specular Reflectivity":
                 if property["Value"] != 0.0:
                     reflectivity_value = property["Value"]
@@ -180,7 +180,7 @@ def process_material(mat, lowres_mode=None):
                     reflectivity_map = property["Texture"]
                     if lowres_mode is not None:
                         reflectivity_map = swap_lowres_filename(reflectivity_map, lowres_mode)
-                _add_to_log("DEBUG: process_dtu(): dual lobe specular reflectivity = " + str(reflectivity_value) + ", specular reflectivity map = " + reflectivity_map)
+                # _add_to_log("DEBUG: process_dtu(): dual lobe specular reflectivity = " + str(reflectivity_value) + ", specular reflectivity map = " + reflectivity_map)
             elif property["Name"] == "Specular Lobe 1 Roughness":
                 if property["Value"] != 0.0:
                     roughness_value = property["Value"]
@@ -188,13 +188,13 @@ def process_material(mat, lowres_mode=None):
                     roughnessMap = property["Texture"]
                     if lowres_mode is not None:
                         roughnessMap = swap_lowres_filename(roughnessMap, lowres_mode)
-                _add_to_log("DEBUG: process_dtu(): specular lobe 1 roughness = " + str(roughness_value) + ", roughness map = " + roughnessMap)
+                # _add_to_log("DEBUG: process_dtu(): specular lobe 1 roughness = " + str(roughness_value) + ", roughness map = " + roughnessMap)
             elif property["Name"] == "Glossy Layered Weight":
                 glossy_weight = property["Value"]
                 glossy_weight_map = property["Texture"]
                 if lowres_mode is not None:
                     glossy_weight_map = swap_lowres_filename(glossy_weight_map, lowres_mode)
-                _add_to_log("DEBUG: process_dtu(): glossy weight = " + str(glossy_weight) + ", glossy weight map = " + glossy_weight_map)
+                # _add_to_log("DEBUG: process_dtu(): glossy weight = " + str(glossy_weight) + ", glossy weight map = " + glossy_weight_map)
             elif property["Name"] == "Glossy Reflectivity":
                 if property["Value"] != 0.0:
                     reflectivity_value = property["Value"]
@@ -202,7 +202,7 @@ def process_material(mat, lowres_mode=None):
                     reflectivity_map = property["Texture"]
                     if lowres_mode is not None:
                         reflectivity_map = swap_lowres_filename(reflectivity_map, lowres_mode)
-                _add_to_log("DEBUG: process_dtu(): glossy reflectivity = " + str(reflectivity_value) + ", reflectivity map = " + reflectivity_map)
+                # _add_to_log("DEBUG: process_dtu(): glossy reflectivity = " + str(reflectivity_value) + ", reflectivity map = " + reflectivity_map)
             elif property["Name"] == "Glossy Roughness":
                 if property["Value"] != 0.0:
                     roughness_value = property["Value"]
@@ -210,7 +210,7 @@ def process_material(mat, lowres_mode=None):
                     roughnessMap = property["Texture"]
                     if lowres_mode is not None:
                         roughnessMap = swap_lowres_filename(roughnessMap, lowres_mode)
-                _add_to_log("DEBUG: process_dtu(): glossy roughness = " + str(roughness_value) + ", roughness map = " + roughnessMap)
+                # _add_to_log("DEBUG: process_dtu(): glossy roughness = " + str(roughness_value) + ", roughness map = " + roughnessMap)
             elif property["Name"] == "Emission Color":
                 emission_property = property
                 emissionMap = property["Texture"]
@@ -319,7 +319,7 @@ def process_material(mat, lowres_mode=None):
         if (not os.path.exists(roughnessMap)):
             _add_to_log("ERROR: process_dtu(): roughness map file does not exist, skipping...")
         else:
-            _add_to_log("DEBUG: Creating Roughness Node to: " + roughnessMap )
+            # _add_to_log("DEBUG: Creating Roughness Node to: " + roughnessMap )
             # create image texture node
             nodes = data.node_tree.nodes
             # TODO: look for existing roughness node of type ShaderNodeTexImage, reuse
@@ -331,7 +331,7 @@ def process_material(mat, lowres_mode=None):
 
     if (emissionMap != ""):
         if (not os.path.exists(emissionMap)):
-            print("ERROR: process_dtu(): emission map file does not exist, skipping...")
+            _add_to_log("ERROR: process_dtu(): emission map file does not exist, skipping...")
         else:
             # create image texture node
             nodes = data.node_tree.nodes
@@ -343,7 +343,7 @@ def process_material(mat, lowres_mode=None):
 
     if (normalMap != ""):
         if (not os.path.exists(normalMap)):
-            print("ERROR: process_dtu(): normal map file does not exist, skipping...")
+            _add_to_log("ERROR: process_dtu(): normal map file does not exist, skipping...")
         else:
             # create image texture node
             nodes = data.node_tree.nodes
@@ -432,7 +432,7 @@ def process_dtu(jsonPath, lowres_mode=None):
     for mat in materialsList:
         process_material(mat, lowres_mode)
 
-    print("DEBUG: process_dtu(): done processing DTU: " + jsonPath)
+    _add_to_log("DEBUG: process_dtu(): done processing DTU: " + jsonPath)
     return jsonObj
 
 def import_fbx(fbxPath):
