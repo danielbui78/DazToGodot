@@ -212,6 +212,8 @@ void DzGodotDialog::saveSettings()
 	settings->setValue("GodotAssetType", assetTypeCombo->itemData(assetTypeCombo->currentIndex()));
 
 	///// Preserve manuallly entered paths ///////// 
+	// Intermediate Path
+	settings->setValue("IntermediatePath", intermediateFolderEdit->text());
 	// Blender Executable Path
 	settings->setValue("BlenderExecutablePath", m_wBlenderExecutablePathEdit->text());
 	// Godot Project Path
