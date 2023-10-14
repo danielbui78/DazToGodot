@@ -1,6 +1,7 @@
 <!DOCTYPE RCC>
 <RCC version="1.0">
     <qresource prefix="/DazBridgeGodot">
+      <file alias="scripts.zip">scripts.zip</file>
         <file alias="icon">Images/Daz to Godot.png</file>
         <file alias="banner.png">Images/banner.png</file>
     </qresource>

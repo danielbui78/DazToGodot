@@ -75,7 +75,6 @@ DzGodotDialog::DzGodotDialog(QWidget* parent) :
 
 	 m_WelcomeLabel->setText(sSetupModeString);
 
-
 	 // Connect new asset type handler
 	 connect(assetTypeCombo, SIGNAL(activated(int)), this, SLOT(HandleAssetTypeComboChange(int)));
 
@@ -100,6 +99,15 @@ DzGodotDialog::DzGodotDialog(QWidget* parent) :
 	 showGodotOptions(true);
 	 this->showLodRow(false);
 
+	 // Select Blender Executable Path GUI
+	 QHBoxLayout* blenderExecutablePathLayout = new QHBoxLayout();
+	 m_wBlenderExecutablePathEdit = new QLineEdit(this);
+	 m_wBlenderExecutablePathButton = new QPushButton("...", this);
+	 blenderExecutablePathLayout->addWidget(m_wBlenderExecutablePathEdit);
+	 blenderExecutablePathLayout->addWidget(m_wBlenderExecutablePathButton);
+	 connect(m_wBlenderExecutablePathButton, SIGNAL(released()), this, SLOT(HandleSelectBlenderExecutablePathButton()));
+
+
 	 // Intermediate Folder
 	 QHBoxLayout* intermediateFolderLayout = new QHBoxLayout();
 	 intermediateFolderEdit = new QLineEdit(this);
@@ -108,12 +116,22 @@ DzGodotDialog::DzGodotDialog(QWidget* parent) :
 	 intermediateFolderLayout->addWidget(intermediateFolderButton);
 	 connect(intermediateFolderButton, SIGNAL(released()), this, SLOT(HandleSelectIntermediateFolderButton()));
 
-	 // Advanced Options
+	 //  Add Intermediate Folder to Advanced Settings container as a new row with specific headers
 	 QFormLayout* advancedLayout = qobject_cast<QFormLayout*>(advancedWidget->layout());
 	 if (advancedLayout)
 	 {
+		 advancedLayout->insertRow(1, "Blender Executable", blenderExecutablePathLayout);
+
 		 advancedLayout->addRow("Intermediate Folder", intermediateFolderLayout);
+		 // reposition the Open Intermediate Folder button so it aligns with the center section
+		 advancedLayout->removeWidget(m_OpenIntermediateFolderButton);
+		 advancedLayout->addRow("", m_OpenIntermediateFolderButton);
 	 }
+
+	 // Disable Experimental Options Checkbox
+	 m_enableExperimentalOptionsCheckBox->setEnabled(false);
+	 m_enableExperimentalOptionsCheckBox->setToolTip(tr("No experimental options in this version."));
+	 m_enableExperimentalOptionsCheckBox->setWhatsThis(tr("No experimental options in this version."));
 
 	 QString sVersionString = tr("DazToGodot Bridge %1 v%2.%3.%4").arg(PLUGIN_MAJOR).arg(PLUGIN_MINOR).arg(PLUGIN_REV).arg(PLUGIN_BUILD);
 	 setBridgeVersionStringAndLabel(sVersionString);
@@ -159,8 +177,46 @@ bool DzGodotDialog::loadSavedSettings()
 		QString DefaultPath = QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation) + QDir::separator() + "DazToGodot";
 		intermediateFolderEdit->setText(DefaultPath);
 	}
+	if (!settings->value("GodotProjectPath").isNull())
+	{
+		m_wGodotProjectFolderEdit->setText(settings->value("GodotProjectPath").toString());
+	}
+	if (!settings->value("BlenderExecutablePath").isNull())
+	{
+		m_wBlenderExecutablePathEdit->setText(settings->value("BlenderExecutablePath").toString());
+	}
+	if (!settings->value("GodotAssetType").isNull())
+	{
+		QString sGodotAssetTypeData = settings->value("GodotAssetType").toString();
+		// look up asset type data
+		for (int i = 0; i < assetTypeCombo->count(); i++)
+		{
+			QVariant itemData = assetTypeCombo->itemData(i);
+			if (sGodotAssetTypeData.toLower() == itemData.toString().toLower())
+			{
+				assetTypeCombo->setCurrentIndex(i);
+			}
+		}
+	}
 
 	return true;
+}
+
+void DzGodotDialog::saveSettings()
+{
+	if (settings == nullptr || m_bDontSaveSettings) return;
+
+	DzBridgeDialog::saveSettings();
+
+	// Godot Asset Type
+	settings->setValue("GodotAssetType", assetTypeCombo->itemData(assetTypeCombo->currentIndex()));
+
+	///// Preserve manuallly entered paths ///////// 
+	// Blender Executable Path
+	settings->setValue("BlenderExecutablePath", m_wBlenderExecutablePathEdit->text());
+	// Godot Project Path
+	settings->setValue("GodotProjectPath", m_wGodotProjectFolderEdit->text());
+
 }
 
 void DzGodotDialog::resetToDefaults()
@@ -372,12 +428,12 @@ void DzGodotDialog::HandleSelectGodotProjectFolderButton()
 	{
 		directoryName = settings->value("GodotProjectPath").toString();
 	}
-	directoryName = QFileDialog::getExistingDirectory(this, tr("Choose Directory"),
+	directoryName = QFileDialog::getExistingDirectory(this, tr("Select Godot Project Folder"),
 		directoryName,
 		QFileDialog::ShowDirsOnly
 		| QFileDialog::DontResolveSymlinks);
 
-	if (directoryName != NULL)
+	if (directoryName != "")
 	{
 		m_wGodotProjectFolderEdit->setText(directoryName);
 		if (settings != nullptr)
@@ -392,6 +448,32 @@ void DzGodotDialog::showGodotOptions(bool bVisible)
 	m_wGodotProjectFolderEdit->setVisible(bVisible);
 	m_wGodotProjectFolderButton->setVisible(bVisible);
 	m_wGodotProjectFolderRowLabelWidget->setVisible(bVisible);
+}
+
+void DzGodotDialog::HandleSelectBlenderExecutablePathButton()
+{
+	// DB 2023-10-13: prepopulate with existing folder string
+	QString directoryName = "";
+	if (settings != nullptr && settings->value("BlenderExecutablePath").isNull() != true)
+	{
+		directoryName = QFileInfo(settings->value("BlenderExecutablePath").toString()).dir().dirName();
+	}
+	QString fileName = QFileDialog::getOpenFileName(this, 
+		tr("Select Blender Executable"),
+		directoryName,
+		tr("Executable Files (*.exe)"), 
+		&tr("Executable Files (*.exe)"),
+		QFileDialog::ReadOnly |
+		QFileDialog::DontResolveSymlinks);
+
+	if (fileName != "")
+	{
+		m_wBlenderExecutablePathEdit->setText(fileName);
+		if (settings != nullptr)
+		{
+			settings->setValue("BlenderExecutablePath", fileName);
+		}
+	}
 }
 
 #include "moc_DzGodotDialog.cpp"

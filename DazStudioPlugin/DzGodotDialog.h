@@ -32,6 +32,7 @@ public:
 
 	Q_INVOKABLE void resetToDefaults() override;
 	Q_INVOKABLE bool loadSavedSettings() override;
+	Q_INVOKABLE void saveSettings() override;
 
 protected slots:
 	void HandleSelectIntermediateFolderButton();
@@ -43,6 +44,8 @@ protected slots:
 	void HandleSelectGodotProjectFolderButton();
 	void showGodotOptions(bool bVisible);
 
+	void HandleSelectBlenderExecutablePathButton();
+
 protected:
 	QLineEdit* intermediateFolderEdit;
 	QPushButton* intermediateFolderButton;
@@ -50,6 +53,10 @@ protected:
 	QLineEdit* m_wGodotProjectFolderEdit;
 	QPushButton* m_wGodotProjectFolderButton;
 	QWidget* m_wGodotProjectFolderRowLabelWidget;
+
+	QLineEdit* m_wBlenderExecutablePathEdit;
+	QPushButton* m_wBlenderExecutablePathButton;
+	QWidget* m_wBlenderExecutablePathRowLabelWdiget;
 
 	virtual void refreshAsset() override;
 

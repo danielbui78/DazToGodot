@@ -31,6 +31,7 @@ protected:
 	 Q_INVOKABLE virtual bool readGui(DZ_BRIDGE_NAMESPACE::DzBridgeDialog*) override;
 
 	 QString m_sGodotProjectFolderPath = "";
+	 QString m_sBlenderExecutablePath = "";
 
 #ifdef UNITTEST_DZBRIDGE
 	friend class UnitTest_DzGodotAction;

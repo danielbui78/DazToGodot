@@ -35,6 +35,8 @@
 #include <shellapi.h>
 #endif
 
+#include "zip.h"
+
 #include "dzbridge.h"
 
 DzGodotAction::DzGodotAction() :
@@ -197,6 +199,24 @@ void DzGodotAction::executeAction()
 			return;
 		}
 
+		// Check if Godot Project Folder and Blender Executable are valid, if not issue Error and fail gracefully
+		if (m_sGodotProjectFolderPath == "" || QDir(m_sGodotProjectFolderPath).exists() == false)
+		{
+			// issue error and fail gracefully
+			QMessageBox::warning(0, tr("Godot Project Folder"), tr("Godot Project Folder must be set."), QMessageBox::Ok);
+			return;
+		}
+		if (m_sBlenderExecutablePath == "" || QFileInfo(m_sBlenderExecutablePath).exists() == false)
+		{
+			// issue error and fail gracefully
+			QMessageBox::warning(0, tr("Blender Executable Path"), tr("Blender Executable Path must be set."), QMessageBox::Ok);
+			// Enable Advanced Settings
+			m_bridgeDialog->getAdvancedSettingsGroupBox()->setChecked(true);
+
+			return;
+		}
+
+
 		// DB 2021-10-11: Progress Bar
 		DzProgress* exportProgress = new DzProgress("Sending to Godot...", 10);
 
@@ -208,11 +228,20 @@ void DzGodotAction::executeAction()
 		exportHD(exportProgress);
 
 		// run blender scripts
-		QString sBlenderPath = QString("C:/Program Files/Blender Foundation/Blender 3.6/blender.exe");
+		//QString sBlenderPath = QString("C:/Program Files/Blender Foundation/Blender 3.6/blender.exe");
 		QString sBlenderLogPath = QString("%1/blender.log").arg(m_sDestinationPath);
-		QString sScriptPath = QString("C:/Github/DazToGodot/BlenderScripts/blender_dtu_to_godot.py");
+		// extract blender scripts to temp and set path
+		bool replace = true;
+		QString sArchiveFilename = "/scripts.zip";
+		QString sEmbeddedArchivePath = ":/DazBridgeGodot" + sArchiveFilename;
+		QFile srcFile(sEmbeddedArchivePath);
+		QString tempPathArchive = dzApp->getTempPath() + sArchiveFilename;
+		DzBridgeAction::copyFile(&srcFile, &tempPathArchive, replace);
+		srcFile.close();
+		::zip_extract(tempPathArchive.toAscii().data(), dzApp->getTempPath().toAscii().data(), nullptr, nullptr);
+		QString sScriptPath = dzApp->getTempPath() + "/blender_dtu_to_godot.py";
 		QString sCommandArgs = QString("--background;--log-file;%1;--python;%2;--python-exit-code;%3;%4").arg(sBlenderLogPath).arg(sScriptPath).arg(m_nPythonExceptionExitCode).arg(m_sDestinationFBX);
-		bool retCode = executeBlenderScripts(sBlenderPath, sCommandArgs);
+		bool retCode = executeBlenderScripts(m_sBlenderExecutablePath, sCommandArgs);
 
 		// DB 2021-10-11: Progress Bar
 		exportProgress->finish();
@@ -362,11 +391,15 @@ bool DzGodotAction::readGui(DZ_BRIDGE_NAMESPACE::DzBridgeDialog* BridgeDialog)
 	if (pGodotDialog)
 	{
 		m_sGodotProjectFolderPath = pGodotDialog->m_wGodotProjectFolderEdit->text().replace("\\", "/");
+		m_sBlenderExecutablePath = pGodotDialog->m_wBlenderExecutablePathEdit->text().replace("\\", "/");
 	}
 	else
 	{
 		// TODO: issue error and fail gracefully
 		m_sGodotProjectFolderPath = "";
+		m_sBlenderExecutablePath = "";
+
+		return false;
 	}
 
 	return true;
