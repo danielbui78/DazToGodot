@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by DzBlenderBridge.rc
+// Used by DzGodotBridge.rc
 //
 #define DZ_VERSION_REV                  0
 #define DZ_SDK_VERSION_REV              0
