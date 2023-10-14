@@ -200,21 +200,108 @@ void DzGodotAction::executeAction()
 		}
 
 		// Check if Godot Project Folder and Blender Executable are valid, if not issue Error and fail gracefully
-		if (m_sGodotProjectFolderPath == "" || QDir(m_sGodotProjectFolderPath).exists() == false)
+		bool bSettingsValid = false;
+		do 
 		{
-			// issue error and fail gracefully
-			QMessageBox::warning(0, tr("Godot Project Folder"), tr("Godot Project Folder must be set."), QMessageBox::Ok);
-			return;
-		}
-		if (m_sBlenderExecutablePath == "" || QFileInfo(m_sBlenderExecutablePath).exists() == false)
-		{
-			// issue error and fail gracefully
-			QMessageBox::warning(0, tr("Blender Executable Path"), tr("Blender Executable Path must be set."), QMessageBox::Ok);
-			// Enable Advanced Settings
-			m_bridgeDialog->getAdvancedSettingsGroupBox()->setChecked(true);
+			if (m_sGodotProjectFolderPath != "" && QDir(m_sGodotProjectFolderPath).exists() &&
+				m_sBlenderExecutablePath != "" && QFileInfo(m_sBlenderExecutablePath).exists())
+			{
+				bSettingsValid = true;
+				break;
+			}
+			if (bSettingsValid == false && m_nNonInteractiveMode == 1)
+			{
+				return;
+			}
+			if (m_sGodotProjectFolderPath == "" || QDir(m_sGodotProjectFolderPath).exists() == false)
+			{
+				QMessageBox::warning(0, tr("Godot Project Folder"), tr("Godot Project Folder must be set."), QMessageBox::Ok);
+			}
+			else if (m_sBlenderExecutablePath == "" || QFileInfo(m_sBlenderExecutablePath).exists() == false)
+			{
+				QMessageBox::warning(0, tr("Blender Executable Path"), tr("Blender Executable Path must be set."), QMessageBox::Ok);
+				// Enable Advanced Settings
+				QGroupBox* advancedBox = m_bridgeDialog->getAdvancedSettingsGroupBox();
+				if (advancedBox->isChecked() == false)
+				{
+					advancedBox->setChecked(true);
+					foreach(QObject* child, advancedBox->children())
+					{
+						QWidget* widget = qobject_cast<QWidget*>(child);
+						if (widget)
+						{
+							widget->setHidden(false);
+							QString name = widget->objectName();
+							dzApp->log("DEBUG: widget name = " + name);
+						}
+					}
+				}
+			}
+			dlgResult = m_bridgeDialog->exec();
+			if (dlgResult == QDialog::Rejected)
+			{
+				return;
+			}
+			if (readGui(m_bridgeDialog) == false)
+			{
+				return;
+			}
 
-			return;
-		}
+		} while (bSettingsValid == false);
+
+
+		//if (m_sGodotProjectFolderPath == "" || QDir(m_sGodotProjectFolderPath).exists() == false)
+		//{
+		//	// issue error and fail gracefully
+		//	if (m_nNonInteractiveMode == 1)
+		//	{
+		//		return;
+		//	}
+		//	while (dlgResult == QDialog::Accepted)
+		//	{
+		//		QMessageBox::warning(0, tr("Godot Project Folder"), tr("Godot Project Folder must be set."), QMessageBox::Ok);
+		//		dlgResult = m_bridgeDialog->exec();
+		//		if (dlgResult == QDialog::Rejected)
+		//		{
+		//			return;
+		//		}
+		//		if (readGui(m_bridgeDialog) == false)
+		//		{
+		//			return;
+		//		}
+		//		if (m_sGodotProjectFolderPath != "" && QDir(m_sGodotProjectFolderPath).exists() )
+		//		{
+		//			break;
+		//		}
+		//	}
+		//}
+		//if (m_sBlenderExecutablePath == "" || QFileInfo(m_sBlenderExecutablePath).exists() == false)
+		//{
+		//	// issue error and fail gracefully
+		//	if (m_nNonInteractiveMode == 1)
+		//	{
+		//		return;
+		//	}
+		//	while (dlgResult == QDialog::Accepted)
+		//	{
+		//		QMessageBox::warning(0, tr("Blender Executable Path"), tr("Blender Executable Path must be set."), QMessageBox::Ok);
+		//		// Enable Advanced Settings
+		//		m_bridgeDialog->getAdvancedSettingsGroupBox()->setChecked(true);
+		//		dlgResult = m_bridgeDialog->exec();
+		//		if (dlgResult == QDialog::Rejected)
+		//		{
+		//			return;
+		//		}
+		//		if (readGui(m_bridgeDialog) == false)
+		//		{
+		//			return;
+		//		}
+		//		if (m_sBlenderExecutablePath != "" && QFileInfo(m_sBlenderExecutablePath).exists())
+		//		{
+		//			break;
+		//		}
+		//	}
+		//}
 
 
 		// DB 2021-10-11: Progress Bar
