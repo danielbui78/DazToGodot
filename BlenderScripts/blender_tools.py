@@ -274,13 +274,13 @@ def process_material(mat, lowres_mode=None):
         bsdf_inputs["Metallic"].default_value = metallic_weight
 
     if (reflectivity_map != ""):
-        if (not os.path.exists(specular_reflectivity_map)):
+        if (not os.path.exists(reflectivity_map)):
             _add_to_log("ERROR: process_dtu(): specular reflectivity map file does not exist, skipping...")
         else:
             # create image texture node
             nodes = data.node_tree.nodes
             node_tex = nodes.new("ShaderNodeTexImage")
-            node_tex.image = bpy.data.images.load(specular_reflectivity_map)
+            node_tex.image = bpy.data.images.load(reflectivity_map)
             node_tex.image.colorspace_settings.name = "Non-Color"
             links = data.node_tree.links
             link = links.new(node_tex.outputs["Color"], bsdf_inputs["Specular"])
