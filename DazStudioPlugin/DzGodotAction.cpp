@@ -541,8 +541,12 @@ bool DzGodotAction::executeBlenderScripts(QString sFilePath, QString sCommandlin
 	progress->finish();
 	delete progress;
 	m_nBlenderExitCode = pToolProcess->exitCode();
-	if (m_nBlenderExitCode != 0)
-	{
+#ifdef __APPLE__
+    if (m_nBlenderExitCode != 0 && m_nBlenderExitCode != 120)
+#else
+    if (m_nBlenderExitCode != 0)
+#endif
+    {
 		if (m_nBlenderExitCode == m_nPythonExceptionExitCode)
 		{
 			dzApp->log(QString("ERROR: DazToGodot: Python error:.... %1").arg(m_nBlenderExitCode));
