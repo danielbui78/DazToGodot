@@ -157,6 +157,7 @@ def _main(argv):
         _add_to_log("DEBUG: saving blend file to destination: " + blend_destination_path)
         try:
             bpy.ops.wm.save_as_mainfile(filepath=blend_destination_path)
+            _add_to_log("DEBUG: save completed.")
         except Exception as e:
             _add_to_log("ERROR: unable to save blend file: " + blend_destination_path)
             _add_to_log("EXCEPTION: " + str(e))
@@ -164,12 +165,22 @@ def _main(argv):
         # save GLB file to godot project folder
         gltfFilePath = gltfFilePath.replace(".gltf", ".glb")
         _add_to_log("DEBUG: saving GLB file to destination: " + gltfFilePath)
-        bpy.ops.export_scene.gltf(filepath=gltfFilePath, export_format="GLB", use_visible=True, use_selection=True)
+        try:
+            bpy.ops.export_scene.gltf(filepath=gltfFilePath, export_format="GLB", use_visible=True, use_selection=True)
+            _add_to_log("DEBUG: save completed.")
+        except Exception as e:
+            _add_to_log("ERROR: unable to save GLB file: " + gltfFilePath)
+            _add_to_log("EXCEPTION: " + str(e))
     elif "gltf" in godot_asset_type.lower():
         # save GLTF file to godot project folder, specify textures folder
         gltfFilePath = gltfFilePath.replace(".glb", ".gltf")
         _add_to_log("DEBUG: saving GLTF file to destination: " + gltfFilePath)
-        bpy.ops.export_scene.gltf(filepath=gltfFilePath, export_format="GLTF_SEPARATE", export_texture_dir="Textures", use_visible=True, use_selection=True)
+        try:
+            bpy.ops.export_scene.gltf(filepath=gltfFilePath, export_format="GLTF_SEPARATE", export_texture_dir="Textures", use_visible=True, use_selection=True)
+            _add_to_log("DEBUG: save completed.")
+        except Exception as e:
+            _add_to_log("ERROR: unable to save GLTF file: " + gltfFilePath)
+            _add_to_log("EXCEPTION: " + str(e))
 
     _add_to_log("DEBUG: main(): completed conversion for: " + str(fbxPath))
 
