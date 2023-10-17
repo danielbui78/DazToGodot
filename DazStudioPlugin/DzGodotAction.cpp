@@ -249,64 +249,11 @@ void DzGodotAction::executeAction()
 
 		} while (bSettingsValid == false);
 
-
-		//if (m_sGodotProjectFolderPath == "" || QDir(m_sGodotProjectFolderPath).exists() == false)
-		//{
-		//	// issue error and fail gracefully
-		//	if (m_nNonInteractiveMode == 1)
-		//	{
-		//		return;
-		//	}
-		//	while (dlgResult == QDialog::Accepted)
-		//	{
-		//		QMessageBox::warning(0, tr("Godot Project Folder"), tr("Godot Project Folder must be set."), QMessageBox::Ok);
-		//		dlgResult = m_bridgeDialog->exec();
-		//		if (dlgResult == QDialog::Rejected)
-		//		{
-		//			return;
-		//		}
-		//		if (readGui(m_bridgeDialog) == false)
-		//		{
-		//			return;
-		//		}
-		//		if (m_sGodotProjectFolderPath != "" && QDir(m_sGodotProjectFolderPath).exists() )
-		//		{
-		//			break;
-		//		}
-		//	}
-		//}
-		//if (m_sBlenderExecutablePath == "" || QFileInfo(m_sBlenderExecutablePath).exists() == false)
-		//{
-		//	// issue error and fail gracefully
-		//	if (m_nNonInteractiveMode == 1)
-		//	{
-		//		return;
-		//	}
-		//	while (dlgResult == QDialog::Accepted)
-		//	{
-		//		QMessageBox::warning(0, tr("Blender Executable Path"), tr("Blender Executable Path must be set."), QMessageBox::Ok);
-		//		// Enable Advanced Settings
-		//		m_bridgeDialog->getAdvancedSettingsGroupBox()->setChecked(true);
-		//		dlgResult = m_bridgeDialog->exec();
-		//		if (dlgResult == QDialog::Rejected)
-		//		{
-		//			return;
-		//		}
-		//		if (readGui(m_bridgeDialog) == false)
-		//		{
-		//			return;
-		//		}
-		//		if (m_sBlenderExecutablePath != "" && QFileInfo(m_sBlenderExecutablePath).exists())
-		//		{
-		//			break;
-		//		}
-		//	}
-		//}
-
-
 		// DB 2021-10-11: Progress Bar
 		DzProgress* exportProgress = new DzProgress("Sending to Godot...", 10);
-
+        exportProgress->setCloseOnFinish(false);
+        exportProgress->enable(true);
+        
 		//Create Daz3D folder if it doesn't exist
 		QDir dir;
 		dir.mkpath(m_sRootFolder);
@@ -314,6 +261,8 @@ void DzGodotAction::executeAction()
 
 		exportHD(exportProgress);
 
+        exportProgress->setInfo("Preparing Blender Scripts...");
+        
 		// run blender scripts
 		//QString sBlenderPath = QString("C:/Program Files/Blender Foundation/Blender 3.6/blender.exe");
 		QString sBlenderLogPath = QString("%1/blender.log").arg(m_sDestinationPath);
@@ -333,7 +282,7 @@ void DzGodotAction::executeAction()
         {
             sPluginFolder = dzApp->getPluginsPath();
         }
-        QStringList aOverrideFilenameList = (QStringList() << "blender_dtu_to_godot.py" << "blender_tools.py" <<"NodeArrange.py");
+        QStringList aOverrideFilenameList = (QStringList() << "blender_dtu_to_godot.py" << "blender_tools.py" << "NodeArrange.py");
         foreach(QString filename, aOverrideFilenameList)
         {
             QString sOverrideFilePath = sPluginFolder + "/" + filename;
@@ -348,8 +297,10 @@ void DzGodotAction::executeAction()
         
 		QString sScriptPath = dzApp->getTempPath() + "/blender_dtu_to_godot.py";
 		QString sCommandArgs = QString("--background;--log-file;%1;--python-exit-code;%2;--python;%3;%4").arg(sBlenderLogPath).arg(m_nPythonExceptionExitCode).arg(sScriptPath).arg(m_sDestinationFBX);
+        exportProgress->setInfo("Starting Blender Processing...");
 		bool retCode = executeBlenderScripts(m_sBlenderExecutablePath, sCommandArgs);
 
+        exportProgress->setInfo("Daz To Godot: Export Phase Completed.");
 		// DB 2021-10-11: Progress Bar
 		exportProgress->finish();
 
@@ -514,8 +465,6 @@ bool DzGodotAction::readGui(DZ_BRIDGE_NAMESPACE::DzBridgeDialog* BridgeDialog)
 
 bool DzGodotAction::executeBlenderScripts(QString sFilePath, QString sCommandlineArguments)
 {
-	DzProgress::setCurrentInfo("DazToGodot: Running Blender Scripts....");
-
 	// fork or spawn child process
 	QString sWorkingPath = m_sDestinationPath;
 	QStringList args = sCommandlineArguments.split(";");
@@ -538,6 +487,7 @@ bool DzGodotAction::executeBlenderScripts(QString sFilePath, QString sCommandlin
 			break;
 		}
 	}
+    progress->setInfo("Blender Scripts Completed.");
 	progress->finish();
 	delete progress;
 	m_nBlenderExitCode = pToolProcess->exitCode();
