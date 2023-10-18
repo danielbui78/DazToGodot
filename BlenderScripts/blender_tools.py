@@ -31,6 +31,9 @@ def _add_to_log(sMessage):
 
 global_image_cache = {}
 
+def scalar_to_vec3(i):
+    return [i, i, i]
+
 def load_cached_image_to_material(matName, input_key, output_key, texture_map, texture_value, color_space=None):
     global global_image_cache
     # lookup texture_map in cache to see if it's already loaded
@@ -310,6 +313,8 @@ def process_material(mat, lowres_mode=None):
             # links = data.node_tree.links
             # link = links.new(node_tex.outputs["Color"], bsdf_inputs["Base Color"])
             load_cached_image_to_material(matName, "Base Color", "Color", colorMap, color_value)
+    else:
+        bsdf_inputs["Base Color"].default_value = color_value
 
     if (metallicMap != ""):
         if (not os.path.exists(metallicMap)):
@@ -385,6 +390,8 @@ def process_material(mat, lowres_mode=None):
             # links = data.node_tree.links
             # link = links.new(node_tex.outputs["Color"], bsdf_inputs["Roughness"])
             load_cached_image_to_material(matName, "Roughness", "Color", roughnessMap, roughness_value, "Non-Color")
+    else:
+        bsdf_inputs["Roughness"].default_value = roughness_value
 
     if (emissionMap != ""):
         if (not os.path.exists(emissionMap)):
@@ -397,7 +404,9 @@ def process_material(mat, lowres_mode=None):
             # node_tex.image.colorspace_settings.name = "Non-Color"
             # links = data.node_tree.links
             # link = links.new(node_tex.outputs["Color"], bsdf_inputs["Emission"])
-            load_cached_image_to_material(matName, "Emission", "Color", emissionMap, 0, "Non-Color")
+            load_cached_image_to_material(matName, "Emission", "Color", emissionMap, [0, 0, 0, 0], "Non-Color")
+    else:
+        bsdf_inputs["Emission"].default_value = [0, 0, 0, 0]
 
     if (normalMap != ""):
         if (not os.path.exists(normalMap)):
@@ -433,6 +442,8 @@ def process_material(mat, lowres_mode=None):
         if data.blend_method == "OPAQUE" or data.blend_method == "BLEND":
             data.blend_method = "HASHED"
         load_cached_image_to_material(matName, "Alpha", "Alpha", cutoutMap, opacity_strength, "Non-Color")
+    else:
+        bsdf_inputs["Alpha"].default_value = opacity_strength
 
     if (refraction_weight != 0.0):
         if data.blend_method == "OPAQUE" or data.blend_method == "BLEND":
