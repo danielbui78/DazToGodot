@@ -28,6 +28,38 @@ def _add_to_log(sMessage):
     with open(logFilename, "a") as file:
         file.write(sMessage + "\n")
 
+
+global_image_cache = {}
+
+def load_cached_image_to_material(matName, input_key, output_key, texture_map, texture_value, color_space=None):
+    global global_image_cache
+    # lookup texture_map in cache to see if it's already loaded
+    hashed_texture_map = texture_map + str(color_space)
+    #hashed_texture_map = texture_map
+    if (hashed_texture_map in global_image_cache):
+        _add_to_log("DEBUG: load_cached_image_to_material(): using cached image: " + texture_map)
+        cached_image = global_image_cache[hashed_texture_map]
+    else:
+        _add_to_log("DEBUG: load_cached_image_to_material(): loading image: " + texture_map)
+        cached_image = bpy.data.images.load(texture_map)
+        if color_space is not None:
+            cached_image.colorspace_settings.name = color_space
+        global_image_cache[hashed_texture_map] = cached_image
+
+    data = bpy.data.materials[matName]
+    # get Principled BSDF Shader inputs
+    bsdf_inputs = data.node_tree.nodes["Principled BSDF"].inputs
+
+    nodes = data.node_tree.nodes
+    node_tex = nodes.new("ShaderNodeTexImage")
+    node_tex.image = cached_image
+
+    bsdf_inputs[input_key].default_value = texture_value
+    links = data.node_tree.links
+    link = links.new(node_tex.outputs[output_key], bsdf_inputs[input_key])
+    return link
+
+
 def srgb_to_linear_rgb(srgb):
     if srgb < 0:
         return 0
@@ -134,6 +166,7 @@ def process_material(mat, lowres_mode=None):
     normalMap = ""
     normal_strength = 1.0
     cutoutMap = ""
+    opacity_strength = 1.0
     horizontal_tiles = 1.0
     vertical_tiles = 1.0
     refraction_weight = 0.0
@@ -221,8 +254,9 @@ def process_material(mat, lowres_mode=None):
                 normalMap = property["Texture"]
                 if lowres_mode is not None:
                     normalMap = swap_lowres_filename(normalMap, lowres_mode)
-            elif property["Name"] == "Cutout Opacity":
+            elif property["Name"] == "Cutout Opacity" or property["Name"] == "Opacity Strength":
                 cutoutMap = property["Texture"]
+                opacity_strength = property["Value"]
                 if lowres_mode is not None:
                     cutoutMap = swap_lowres_filename(cutoutMap, lowres_mode)
             elif property["Name"] == "Horizontal Tiles":
@@ -243,33 +277,52 @@ def process_material(mat, lowres_mode=None):
     # _add_to_log("DEBUG: process_dtu(): e map = \"" + str(emissionMap) + "\"")
     # _add_to_log("DEBUG: process_dtu(): n map = \"" + str(normalMap) + "\"")
 
-    data = bpy.data.materials[matName]
     # get Principled BSDF Shader inputs
-    bsdf_inputs = data.node_tree.nodes["Principled BSDF"].inputs
+    data = bpy.data.materials[matName]
+    nodes = data.node_tree.nodes
+    # find Principled BSDF shader node
+    shader_node = None
+    # find Principled BSDF by bl_idname
+    for node in nodes:
+        if node.bl_idname == "ShaderNodeBsdfPrincipled":
+            shader_node = node
+    # create shader-output pair if not found
+    if shader_node is None:
+        shader_node = nodes.new("ShaderNodeBsdfPrincipled")
+        output_node = nodes.new("ShaderNodeOutputMaterial")
+        if shader_node is None or output_node is None:
+            _add_to_log("ERROR: Error setting up Principled BSDF node for mat: " + matName)
+            return
+        links = data.node_tree.links
+        links.new(shader_node.outputs["BSDF"], output_node.inputs["Surface"])
+
+    bsdf_inputs = nodes["Principled BSDF"].inputs
 
     if (colorMap != ""):
         if (not os.path.exists(colorMap)):
             _add_to_log("ERROR: process_dtu(): color map file does not exist, skipping...")
         else:
-            # create image texture node
-            nodes = data.node_tree.nodes
-            node_tex = nodes.new("ShaderNodeTexImage")
-            node_tex.image = bpy.data.images.load(colorMap)
-            bsdf_inputs["Base Color"].default_value = color_value
-            links = data.node_tree.links
-            link = links.new(node_tex.outputs["Color"], bsdf_inputs["Base Color"])
+            # # create image texture node
+            # nodes = data.node_tree.nodes
+            # node_tex = nodes.new("ShaderNodeTexImage")
+            # node_tex.image = bpy.data.images.load(colorMap)
+            # bsdf_inputs["Base Color"].default_value = color_value
+            # links = data.node_tree.links
+            # link = links.new(node_tex.outputs["Color"], bsdf_inputs["Base Color"])
+            load_cached_image_to_material(matName, "Base Color", "Color", colorMap, color_value)
 
     if (metallicMap != ""):
         if (not os.path.exists(metallicMap)):
             _add_to_log("ERROR: process_dtu(): metallic map file does not exist, skipping...")
         else:
-            # create image texture node
-            nodes = data.node_tree.nodes
-            node_tex = nodes.new("ShaderNodeTexImage")
-            node_tex.image = bpy.data.images.load(metallicMap)
-            node_tex.image.colorspace_settings.name = "Non-Color"
-            links = data.node_tree.links
-            link = links.new(node_tex.outputs["Color"], bsdf_inputs["Metallic"])
+            # # create image texture node
+            # nodes = data.node_tree.nodes
+            # node_tex = nodes.new("ShaderNodeTexImage")
+            # node_tex.image = bpy.data.images.load(metallicMap)
+            # node_tex.image.colorspace_settings.name = "Non-Color"
+            # links = data.node_tree.links
+            # link = links.new(node_tex.outputs["Color"], bsdf_inputs["Metallic"])
+            load_cached_image_to_material(matName, "Metallic", "Color", metallicMap, metallic_weight, "Non-Color")
     else:
         bsdf_inputs["Metallic"].default_value = metallic_weight
 
@@ -277,35 +330,38 @@ def process_material(mat, lowres_mode=None):
         if (not os.path.exists(reflectivity_map)):
             _add_to_log("ERROR: process_dtu(): specular reflectivity map file does not exist, skipping...")
         else:
-            # create image texture node
-            nodes = data.node_tree.nodes
-            node_tex = nodes.new("ShaderNodeTexImage")
-            node_tex.image = bpy.data.images.load(reflectivity_map)
-            node_tex.image.colorspace_settings.name = "Non-Color"
-            links = data.node_tree.links
-            link = links.new(node_tex.outputs["Color"], bsdf_inputs["Specular"])
+            # # create image texture node
+            # nodes = data.node_tree.nodes
+            # node_tex = nodes.new("ShaderNodeTexImage")
+            # node_tex.image = bpy.data.images.load(reflectivity_map)
+            # node_tex.image.colorspace_settings.name = "Non-Color"
+            # links = data.node_tree.links
+            # link = links.new(node_tex.outputs["Color"], bsdf_inputs["Specular"])
+            load_cached_image_to_material(matName, "Specular", "Color", reflectivity_map, reflectivity_value, "Non-Color")
     elif (specular_weight_map != ""):
         if (not os.path.exists(specular_weight_map)):
             _add_to_log("ERROR: process_dtu(): specular weight map file does not exist, skipping...")
         else:
-            # create image texture node
-            nodes = data.node_tree.nodes
-            node_tex = nodes.new("ShaderNodeTexImage")
-            node_tex.image = bpy.data.images.load(specular_weight_map)
-            node_tex.image.colorspace_settings.name = "Non-Color"
-            links = data.node_tree.links
-            link = links.new(node_tex.outputs["Color"], bsdf_inputs["Specular"])
+            # # create image texture node
+            # nodes = data.node_tree.nodes
+            # node_tex = nodes.new("ShaderNodeTexImage")
+            # node_tex.image = bpy.data.images.load(specular_weight_map)
+            # node_tex.image.colorspace_settings.name = "Non-Color"
+            # links = data.node_tree.links
+            # link = links.new(node_tex.outputs["Color"], bsdf_inputs["Specular"])
+            load_cached_image_to_material(matName, "Specular", "Color", specular_weight_map, dual_lobe_specular_weight, "Non-Color")
     elif (glossy_weight_map != ""):
         if (not os.path.exists(glossy_weight_map)):
             _add_to_log("ERROR: process_dtu(): glossy weight map file does not exist, skipping...")
         else:
-            # create image texture node
-            nodes = data.node_tree.nodes
-            node_tex = nodes.new("ShaderNodeTexImage")
-            node_tex.image = bpy.data.images.load(glossy_weight_map)
-            node_tex.image.colorspace_settings.name = "Non-Color"
-            links = data.node_tree.links
-            link = links.new(node_tex.outputs["Color"], bsdf_inputs["Specular"])
+            # # create image texture node
+            # nodes = data.node_tree.nodes
+            # node_tex = nodes.new("ShaderNodeTexImage")
+            # node_tex.image = bpy.data.images.load(glossy_weight_map)
+            # node_tex.image.colorspace_settings.name = "Non-Color"
+            # links = data.node_tree.links
+            # link = links.new(node_tex.outputs["Color"], bsdf_inputs["Specular"])
+            load_cached_image_to_material(matName, "Specular", "Color", glossy_weight_map, glossy_weight, "Non-Color")
     elif (reflectivity_value != 0.0):
         bsdf_inputs["Specular"].default_value = reflectivity_value
     elif (dual_lobe_specular_weight != 0.0):
@@ -319,27 +375,29 @@ def process_material(mat, lowres_mode=None):
         if (not os.path.exists(roughnessMap)):
             _add_to_log("ERROR: process_dtu(): roughness map file does not exist, skipping...")
         else:
-            # _add_to_log("DEBUG: Creating Roughness Node to: " + roughnessMap )
-            # create image texture node
-            nodes = data.node_tree.nodes
-            # TODO: look for existing roughness node of type ShaderNodeTexImage, reuse
-            node_tex = nodes.new("ShaderNodeTexImage")
-            node_tex.image = bpy.data.images.load(roughnessMap)
-            node_tex.image.colorspace_settings.name = "Non-Color"
-            links = data.node_tree.links
-            link = links.new(node_tex.outputs["Color"], bsdf_inputs["Roughness"])
+            # # _add_to_log("DEBUG: Creating Roughness Node to: " + roughnessMap )
+            # # create image texture node
+            # nodes = data.node_tree.nodes
+            # # TODO: look for existing roughness node of type ShaderNodeTexImage, reuse
+            # node_tex = nodes.new("ShaderNodeTexImage")
+            # node_tex.image = bpy.data.images.load(roughnessMap)
+            # node_tex.image.colorspace_settings.name = "Non-Color"
+            # links = data.node_tree.links
+            # link = links.new(node_tex.outputs["Color"], bsdf_inputs["Roughness"])
+            load_cached_image_to_material(matName, "Roughness", "Color", roughnessMap, roughness_value, "Non-Color")
 
     if (emissionMap != ""):
         if (not os.path.exists(emissionMap)):
             _add_to_log("ERROR: process_dtu(): emission map file does not exist, skipping...")
         else:
-            # create image texture node
-            nodes = data.node_tree.nodes
-            node_tex = nodes.new("ShaderNodeTexImage")
-            node_tex.image = bpy.data.images.load(emissionMap)
-            node_tex.image.colorspace_settings.name = "Non-Color"
-            links = data.node_tree.links
-            link = links.new(node_tex.outputs["Color"], bsdf_inputs["Emission"])
+            # # create image texture node
+            # nodes = data.node_tree.nodes
+            # node_tex = nodes.new("ShaderNodeTexImage")
+            # node_tex.image = bpy.data.images.load(emissionMap)
+            # node_tex.image.colorspace_settings.name = "Non-Color"
+            # links = data.node_tree.links
+            # link = links.new(node_tex.outputs["Color"], bsdf_inputs["Emission"])
+            load_cached_image_to_material(matName, "Emission", "Color", emissionMap, 0, "Non-Color")
 
     if (normalMap != ""):
         if (not os.path.exists(normalMap)):
@@ -374,6 +432,7 @@ def process_material(mat, lowres_mode=None):
     if (cutoutMap != ""):
         if data.blend_method == "OPAQUE" or data.blend_method == "BLEND":
             data.blend_method = "HASHED"
+        load_cached_image_to_material(matName, "Alpha", "Alpha", cutoutMap, opacity_strength, "Non-Color")
 
     if (refraction_weight != 0.0):
         if data.blend_method == "OPAQUE" or data.blend_method == "BLEND":
@@ -427,6 +486,15 @@ def process_dtu(jsonPath, lowres_mode=None):
     except:
         _add_to_log("ERROR: process_dtu(): unable to parse DTU: " + jsonPath)
         return
+
+    # delete all nodes from materials so that we can rebuild them
+    for mat in materialsList:
+        matName = mat["Material Name"]
+        data = bpy.data.materials[matName]
+        nodes = data.node_tree.nodes
+        for node in nodes:
+#            _add_to_log("DEBUG: process_dtu(): removing node: " + node.name)
+            nodes.remove(node)
 
     # find and process each DTU material node
     for mat in materialsList:
