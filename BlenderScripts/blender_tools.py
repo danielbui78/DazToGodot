@@ -153,6 +153,84 @@ def remove_unlinked_shader_nodes(mat_name):
         if node not in linked_nodes:
             nodes.remove(node)
 
+def apply_tpose_for_g8():
+    _add_to_log("DEBUG: applying t-pose for G8...")
+    # select all objects
+    bpy.ops.object.select_all(action="SELECT")
+    # switch to pose mode
+    bpy.ops.object.mode_set(mode="POSE")
+    # go to frame 0
+    bpy.context.scene.frame_set(0)
+    # clear all pose transforms
+    bpy.ops.pose.transforms_clear()
+    # set tpose values for shoulders and hips
+    if "lShldrBend" in bpy.context.object.pose.bones:
+        _add_to_log("DEBUG: applying t-pose rotations...")
+        # rotate left shoulder 50 degrees along global y
+        bpy.context.object.pose.bones["lShldrBend"].rotation_mode= "XYZ"
+        bpy.context.object.pose.bones["lShldrBend"].rotation_euler[2] = 0.872665
+        bpy.context.object.pose.bones["rShldrBend"].rotation_mode= "XYZ"
+        bpy.context.object.pose.bones["rShldrBend"].rotation_euler[2] = -0.872665
+        # L and R hips to 5 degrees
+        bpy.context.object.pose.bones["lThighBend"].rotation_mode= "XYZ"
+        bpy.context.object.pose.bones["lThighBend"].rotation_euler[2] = -0.0872665
+        bpy.context.object.pose.bones["rThighBend"].rotation_mode= "XYZ"
+        bpy.context.object.pose.bones["rThighBend"].rotation_euler[2] = 0.0872665
+
+    # Object Mode
+    bpy.ops.object.mode_set(mode="OBJECT")       
+    #retrieve armature name
+    armature_name = bpy.data.armatures[0].name
+    for arm in bpy.data.armatures:
+        if "genesis" in arm.name.lower():
+            armature_name = arm.name
+            break
+
+    # create a list of objects with armature modifier
+    armature_modifier_list = []
+    for obj in bpy.context.scene.objects:
+        if obj.type == "MESH":
+            for mod in obj.modifiers:
+                if mod.type == "ARMATURE" and mod.name == armature_name:
+                    armature_modifier_list.append([obj, mod])
+
+    # duplicate and apply armature modifier
+    for obj, mod in armature_modifier_list:
+        _add_to_log("DEBUG: Duplicating armature modifier: " + obj.name + "." + mod.name)
+        # select object
+        _add_to_log("DEBUG: Selecting object: " + obj.name)
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        num_mods = len(obj.modifiers)
+        _add_to_log("DEBUG: num_mods = " + str(num_mods))
+        result = bpy.ops.object.modifier_copy(modifier=mod.name)
+        _add_to_log("DEBUG: result=" + str(result) + ", mod.name=" + mod.name)
+        if len(obj.modifiers) > num_mods:
+            new_mod = obj.modifiers[num_mods]
+            _add_to_log("DEBUG: Applying armature modifier: " + new_mod.name)
+            result = bpy.ops.object.modifier_apply(modifier=new_mod.name)
+            _add_to_log("DEBUG: result=" + str(result) + ", mod.name=" + new_mod.name)
+        else:
+            _add_to_log("DEBUG: Unable to retrieve duplicate, applying original: " + mod.name)
+            result = bpy.ops.object.modifier_apply(modifier=mod.name)
+            _add_to_log("DEBUG: result=" + str(result) + ", mod.name=" + mod.name)
+
+    # pose mode
+    bpy.ops.object.select_all(action="DESELECT")
+    armature_obj = bpy.data.objects.get(armature_name)
+    armature_obj.select_set(True)
+    bpy.context.view_layer.objects.active = armature_obj
+    bpy.ops.object.mode_set(mode="POSE")
+    # apply pose as rest pose
+    _add_to_log("DEBUG: Applying pose as rest pose...")
+    bpy.ops.pose.armature_apply(selected=False)
+    # Object Mode
+    bpy.ops.object.mode_set(mode="OBJECT")
+    # select all before returning
+    bpy.ops.object.select_all(action="SELECT")
+
+
 
 
 def process_material(mat, lowres_mode=None):

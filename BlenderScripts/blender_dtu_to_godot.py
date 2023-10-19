@@ -83,6 +83,12 @@ def _main(argv):
     _add_to_log("DEBUG: main(): loading json file: " + str(jsonPath))
     dtu_dict = blender_tools.process_dtu(jsonPath)
 
+    daz_generation = dtu_dict["Asset Id"]
+    if ("Genesis8" in daz_generation):
+        blender_tools.apply_tpose_for_g8()
+    elif ("Genesis9" in daz_generation):
+        pass
+
     # prepare destination folder path
     blenderFilePath = fbxPath.replace(".fbx", ".blend")
     intermediate_folder_path = os.path.dirname(fbxPath)
@@ -173,6 +179,10 @@ def _main(argv):
             _add_to_log("EXCEPTION: " + str(e))
     elif ( godot_asset_type.lower() == "godot_gltf" or
           godot_asset_type.lower() == "godot_gltf_blend" ):
+        # create textures folder
+        destination_texture_folder = os.path.join(destinationPath, "Textures").replace("\\","/")
+        if (not os.path.exists(destination_texture_folder)):
+            os.makedirs(destination_texture_folder)        
         # save GLTF file to godot project folder, specify textures folder
         gltfFilePath = gltfFilePath.replace(".glb", ".gltf")
         _add_to_log("DEBUG: saving GLTF file to destination: " + gltfFilePath)
