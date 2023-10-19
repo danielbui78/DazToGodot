@@ -23,6 +23,7 @@ The Daz To Godot exporter can convert and transfer Genesis 9 characters to the G
 
 The Daz To Godot exporter consists of two parts: a Daz Studio plugin which exports converted assets to an intermediate folder, and a set of python automation scripts which automatically run Blender to perform additional conversion steps before transferring assets to the Godot game engine.  Once in Godot, the character can be modified and saved from Blender and automatically updated within the Godot scene.
 
+*Known Issues:* Currently, GLTF offers the best material support.  A Blend file Compatibility Mode was added which converts the GLTF file back into a Blend file for the user to conveniently edit.  Some materials such as tears and eye moisture suffer quality loss during this back-conversion.  This Compatibility Mode can be selected from the Asset Type drop-down in the DazToGodot dialog window.  Direct Daz to Blend file support produces very good quality in Blender but has issues when used with the Godot built-in Blend file importer.  This pathway is available to test and is marked *Work-In-Progress*.
 
 ## 2. Prerequisites
 - A compatible version of the [Daz Studio][DazStudioURL] application
