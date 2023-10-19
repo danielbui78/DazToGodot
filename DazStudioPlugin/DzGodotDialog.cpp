@@ -83,10 +83,11 @@ DzGodotDialog::DzGodotDialog(QWidget* parent) :
 
 	 ////// GODOT MODE UI
 	 // Add Godot Asset Types
-	 assetTypeCombo->addItem("Godot .BLEND (Godot 4.x)", "Godot_Blend");
+	 assetTypeCombo->addItem("Godot .BLEND (Compatibility Mode)", "Godot_Gltf_Blend");
 	 assetTypeCombo->addItem("Godot .GLTF + extracted textures", "Godot_Gltf");
 	 assetTypeCombo->addItem("Godot .GLB (embedded textures)", "Godot_Glb");
-	// Add Project Folder
+	 assetTypeCombo->addItem("Godot .BLEND (Godot 4.x) *Work-In-Progress*", "Godot_Blend");
+	 // Add Project Folder
 	 QHBoxLayout* godotProjectFolderLayout = new QHBoxLayout();
 	 m_wGodotProjectFolderEdit = new QLineEdit(this);
 	 m_wGodotProjectFolderButton = new QPushButton("...", this);

@@ -118,7 +118,7 @@ def _main(argv):
 
     image_cache_list = []
     # Copy files to godot project folder:    
-    if "blend" in godot_asset_type.lower():
+    if godot_asset_type.lower() == "godot_blend":
         destination_texture_folder = os.path.join(destinationPath, "Textures").replace("\\","/")
         if (not os.path.exists(destination_texture_folder)):
             os.makedirs(destination_texture_folder)
@@ -161,7 +161,7 @@ def _main(argv):
         except Exception as e:
             _add_to_log("ERROR: unable to save blend file: " + blend_destination_path)
             _add_to_log("EXCEPTION: " + str(e))
-    elif "glb" in godot_asset_type.lower():
+    elif godot_asset_type.lower() == "godot_glb":
         # save GLB file to godot project folder
         gltfFilePath = gltfFilePath.replace(".gltf", ".glb")
         _add_to_log("DEBUG: saving GLB file to destination: " + gltfFilePath)
@@ -171,7 +171,8 @@ def _main(argv):
         except Exception as e:
             _add_to_log("ERROR: unable to save GLB file: " + gltfFilePath)
             _add_to_log("EXCEPTION: " + str(e))
-    elif "gltf" in godot_asset_type.lower():
+    elif ( godot_asset_type.lower() == "godot_gltf" or
+          godot_asset_type.lower() == "godot_gltf_blend" ):
         # save GLTF file to godot project folder, specify textures folder
         gltfFilePath = gltfFilePath.replace(".glb", ".gltf")
         _add_to_log("DEBUG: saving GLTF file to destination: " + gltfFilePath)
@@ -181,7 +182,7 @@ def _main(argv):
         except Exception as e:
             _add_to_log("ERROR: unable to save GLTF file: " + gltfFilePath)
             _add_to_log("EXCEPTION: " + str(e))
-
+        
     _add_to_log("DEBUG: main(): completed conversion for: " + str(fbxPath))
 
 

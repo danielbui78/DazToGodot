@@ -282,7 +282,7 @@ void DzGodotAction::executeAction()
         {
             sPluginFolder = dzApp->getPluginsPath();
         }
-        QStringList aOverrideFilenameList = (QStringList() << "blender_dtu_to_godot.py" << "blender_tools.py" << "NodeArrange.py");
+        QStringList aOverrideFilenameList = (QStringList() << "blender_dtu_to_godot.py" << "blender_tools.py" << "NodeArrange.py" << "blender_gltf_to_blend.py");
         foreach(QString filename, aOverrideFilenameList)
         {
             QString sOverrideFilePath = sPluginFolder + "/" + filename;
@@ -299,6 +299,18 @@ void DzGodotAction::executeAction()
 		QString sCommandArgs = QString("--background;--log-file;%1;--python-exit-code;%2;--python;%3;%4").arg(sBlenderLogPath).arg(m_nPythonExceptionExitCode).arg(sScriptPath).arg(m_sDestinationFBX);
         exportProgress->setInfo("Starting Blender Processing...");
 		bool retCode = executeBlenderScripts(m_sBlenderExecutablePath, sCommandArgs);
+
+		if (m_sAssetType.toLower() == "godot_gltf_blend")
+		{
+			// execute gltf to blend pathway
+			QString sScriptPath = dzApp->getTempPath() + "/blender_gltf_to_blend.py";
+			QString sGltfPath = m_sGodotProjectFolderPath + "/" + m_sAssetName + "/" + m_sAssetName + ".gltf";
+			QString sCommandArgs = QString("--background;--log-file;%1;--python-exit-code;%2;--python;%3;%4").arg(sBlenderLogPath).arg(m_nPythonExceptionExitCode).arg(sScriptPath).arg(sGltfPath);
+			exportProgress->setInfo("Blender Compatibility Mode...");
+			bool retCode = executeBlenderScripts(m_sBlenderExecutablePath, sCommandArgs);
+			QFile(sGltfPath).remove();
+			QFile(sGltfPath.replace(".gltf", ".bin")).remove();
+		}
 
         exportProgress->setInfo("Daz To Godot: Export Phase Completed.");
 		// DB 2021-10-11: Progress Bar
