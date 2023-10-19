@@ -153,7 +153,7 @@ def remove_unlinked_shader_nodes(mat_name):
         if node not in linked_nodes:
             nodes.remove(node)
 
-def apply_tpose_for_g8():
+def apply_tpose_for_g8_g9():
     _add_to_log("DEBUG: applying t-pose for G8...")
     # select all objects
     bpy.ops.object.select_all(action="SELECT")
@@ -176,6 +176,17 @@ def apply_tpose_for_g8():
         bpy.context.object.pose.bones["lThighBend"].rotation_euler[2] = -0.0872665
         bpy.context.object.pose.bones["rThighBend"].rotation_mode= "XYZ"
         bpy.context.object.pose.bones["rThighBend"].rotation_euler[2] = 0.0872665
+    if "l_upperarm" in bpy.context.object.pose.bones:
+        # rotate left shoulder by -47 degrees along global y
+        bpy.context.object.pose.bones["l_upperarm"].rotation_mode= "XYZ"
+        bpy.context.object.pose.bones["l_upperarm"].rotation_euler[2] = 0.825541
+        bpy.context.object.pose.bones["r_upperarm"].rotation_mode= "XYZ"
+        bpy.context.object.pose.bones["r_upperarm"].rotation_euler[2] = -0.825541
+        # L and R hips to 5 degrees
+        bpy.context.object.pose.bones["l_thigh"].rotation_mode= "XYZ"
+        bpy.context.object.pose.bones["l_thigh"].rotation_euler[2] = -0.0872665
+        bpy.context.object.pose.bones["r_thigh"].rotation_mode= "XYZ"
+        bpy.context.object.pose.bones["r_thigh"].rotation_euler[2] = 0.0872665
 
     # Object Mode
     bpy.ops.object.mode_set(mode="OBJECT")       

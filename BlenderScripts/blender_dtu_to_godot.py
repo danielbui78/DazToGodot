@@ -85,9 +85,9 @@ def _main(argv):
 
     daz_generation = dtu_dict["Asset Id"]
     if ("Genesis8" in daz_generation):
-        blender_tools.apply_tpose_for_g8()
+        blender_tools.apply_tpose_for_g8_g9()
     elif ("Genesis9" in daz_generation):
-        pass
+        blender_tools.apply_tpose_for_g8_g9()
 
     # prepare destination folder path
     blenderFilePath = fbxPath.replace(".fbx", ".blend")
