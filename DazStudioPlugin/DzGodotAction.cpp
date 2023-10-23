@@ -52,6 +52,13 @@ DzGodotAction::DzGodotAction() :
 	icon.addPixmap(basePixmap, QIcon::Normal, QIcon::Off);
 	QAction::setIcon(icon);
 
+	m_bConvertToPng = true;
+	m_bExportAllTextures = true;
+	m_bCombineDiffuseAndAlphaMaps = true;
+	m_bResizeTextures = true;
+	m_qTargetTextureSize = QSize(4096, 4096);
+	m_bMultiplyTextureValues = false;
+
 }
 
 bool DzGodotAction::createUI()
