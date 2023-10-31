@@ -43,7 +43,7 @@ DzGodotAction::DzGodotAction() :
 	DzBridgeAction(tr("Daz To &Godot"), tr("Send the selected node to Godot."))
 {
 	m_nNonInteractiveMode = 0;
-	m_sAssetType = QString("SkeletalMesh");
+	m_sAssetType = QString("Godot_Gltf_Blend");
 
 	//Setup Icon
 	QString iconName = "Daz to Godot";
@@ -53,11 +53,14 @@ DzGodotAction::DzGodotAction() :
 	QAction::setIcon(icon);
 
 	m_bConvertToPng = true;
+	m_bConvertToJpg = true;
 	m_bExportAllTextures = true;
 	m_bCombineDiffuseAndAlphaMaps = true;
 	m_bResizeTextures = true;
 	m_qTargetTextureSize = QSize(4096, 4096);
 	m_bMultiplyTextureValues = false;
+	m_bRecompressIfFileSizeTooBig = true;
+	m_nFileSizeThresholdToInitiateRecompression = 1024 * 1024 * 1;
 
 }
 
@@ -255,6 +258,16 @@ void DzGodotAction::executeAction()
 			}
 
 		} while (bSettingsValid == false);
+
+		// set up additional flags
+		if (m_sAssetType == "Godot_Blend")
+		{
+			m_bForceReEncoding = true;
+		}
+		else
+		{
+			m_bForceReEncoding = false;
+		}
 
 		// DB 2021-10-11: Progress Bar
 		DzProgress* exportProgress = new DzProgress("Sending to Godot...", 10);

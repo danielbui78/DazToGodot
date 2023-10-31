@@ -93,12 +93,20 @@ def _main(argv):
     blenderFilePath = fbxPath.replace(".fbx", ".blend")
     intermediate_folder_path = os.path.dirname(fbxPath)
 
-    # remove missing images
+    # remove missing or unused images
     for image in bpy.data.images:
+        is_missing = False
         if image.filepath:
             imagePath = bpy.path.abspath(image.filepath)
             if (not os.path.exists(imagePath)):
-                bpy.data.images.remove(image)
+                is_missing = True
+
+        is_unused = False
+        if image.users == 0:
+            is_unused = True
+
+        if is_missing or is_unused:
+            bpy.data.images.remove(image)
 
     # switch to object mode before saving
     bpy.ops.object.mode_set(mode="OBJECT")
