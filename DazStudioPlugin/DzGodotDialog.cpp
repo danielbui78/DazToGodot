@@ -83,7 +83,7 @@ DzGodotDialog::DzGodotDialog(QWidget* parent) :
 
 	 ////// GODOT MODE UI
 	 // Add Godot Asset Types
-	 assetTypeCombo->addItem("Godot .BLEND (Compatibility Mode)", "Godot_Gltf_Blend");
+	 assetTypeCombo->addItem("Godot .BLEND (Godot 4.x)", "Godot_Gltf_Blend");
 	 assetTypeCombo->addItem("Godot .GLTF + extracted textures", "Godot_Gltf");
 	 assetTypeCombo->addItem("Godot .GLB (embedded textures)", "Godot_Glb");
 	 assetTypeCombo->addItem("Godot .BLEND (Godot 4.x) *Work-In-Progress*", "Godot_Blend");

@@ -80,7 +80,8 @@ def _main(argv):
     blender_tools.center_all_viewports()
 
     # prepare destination folder path
-    blenderFilePath = gltfPath + ".blend"
+    # blenderFilePath = gltfPath + ".blend"
+    blenderFilePath = gltfPath.replace(".gltf", ".blend")
     intermediate_folder_path = os.path.dirname(blenderFilePath)
 
     # remove missing images
