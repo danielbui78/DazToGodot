@@ -36,7 +36,11 @@ protected:
 	 QString m_sGodotProjectFolderPath = "";
 	 QString m_sBlenderExecutablePath = "";
      int m_nBlenderExitCode = 0;
-    
+
+	 Q_INVOKABLE virtual bool isAssetMorphCompatible(QString sAssetType) override;
+	 Q_INVOKABLE virtual bool isAssetMeshCompatible(QString sAsseType) override;
+	 Q_INVOKABLE virtual bool isAssetAnimationCompatible(QString sAssetType) override;
+
 #ifdef UNITTEST_DZBRIDGE
 	friend class UnitTest_DzGodotAction;
 #endif

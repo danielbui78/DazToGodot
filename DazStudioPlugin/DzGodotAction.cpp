@@ -179,18 +179,21 @@ void DzGodotAction::executeAction()
 			{
 				m_morphSelectionDialog = DZ_BRIDGE_NAMESPACE::DzBridgeMorphSelectionDialog::Get(m_bridgeDialog);
 			}
-			m_mMorphNameToLabel.clear();
+//			m_mMorphNameToLabel.clear();
+			m_MorphNamesToExport.clear();
 			foreach(QString morphName, m_aMorphListOverride)
 			{
 				QString label = m_morphSelectionDialog->GetMorphLabelFromName(morphName);
-				m_mMorphNameToLabel.insert(morphName, label);
+//				m_mMorphNameToLabel.insert(morphName, label);
+				m_MorphNamesToExport.append(morphName);
 			}
 		}
 		else
 		{
 			m_bEnableMorphs = false;
 			m_sMorphSelectionRule = "";
-			m_mMorphNameToLabel.clear();
+//			m_mMorphNameToLabel.clear();
+			m_MorphNamesToExport.clear();
 		}
 
 	}
@@ -540,6 +543,21 @@ bool DzGodotAction::executeBlenderScripts(QString sFilePath, QString sCommandlin
 		return false;
 	}
 
+	return true;
+}
+
+bool DzGodotAction::isAssetMorphCompatible(QString sAssetType)
+{
+	return true;
+}
+
+bool DzGodotAction::isAssetMeshCompatible(QString sAssetType)
+{
+	return true;
+}
+
+bool DzGodotAction::isAssetAnimationCompatible(QString sAssetType)
+{
 	return true;
 }
 
