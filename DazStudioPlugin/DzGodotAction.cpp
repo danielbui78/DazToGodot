@@ -289,7 +289,25 @@ void DzGodotAction::executeAction()
 		// run blender scripts
 		//QString sBlenderPath = QString("C:/Program Files/Blender Foundation/Blender 3.6/blender.exe");
 		QString sBlenderLogPath = QString("%1/blender.log").arg(m_sDestinationPath);
-		// extract blender scripts to temp and set path
+
+		// search for override files in folder with DLL and copy over extracted files
+		bool bUseFallbackScriptFolder = false;
+		QString sPluginFolder = dzApp->getPluginsPath() + "/DazToGodot";
+		if (QDir(sPluginFolder).exists() == false)
+		{
+			QDir dir;
+			bool result = dir.mkpath(sPluginFolder);
+			if (!result)
+			{
+				dzApp->log("ERROR: Unable to create script folder: " + sPluginFolder + ", will fallback to using temp folder to store script files...");
+				sPluginFolder = "";
+				bUseFallbackScriptFolder = true;
+			}
+		}
+
+		// 1. extract to temp folder
+		// 2. attempt copy to plugindata folder
+		QString sScriptFolderPath;
 		bool replace = true;
 		QString sArchiveFilename = "/scripts.zip";
 		QString sEmbeddedArchivePath = ":/DazBridgeGodot" + sArchiveFilename;
@@ -297,30 +315,108 @@ void DzGodotAction::executeAction()
 		QString tempPathArchive = dzApp->getTempPath() + sArchiveFilename;
 		DzBridgeAction::copyFile(&srcFile, &tempPathArchive, replace);
 		srcFile.close();
-		::zip_extract(tempPathArchive.toAscii().data(), dzApp->getTempPath().toAscii().data(), nullptr, nullptr);
+		int result = ::zip_extract(tempPathArchive.toAscii().data(), dzApp->getTempPath().toAscii().data(), nullptr, nullptr);
 
+		// 2. attempt copy to plugindata folder, if already exist, use as override
         // search for override files in folder with DLL and copy over extracted files
-        QString sPluginFolder = dzApp->getPluginsPath() + "/DazToGodot";
-        if (QDir(sPluginFolder).exists() == false)
-        {
-            sPluginFolder = dzApp->getPluginsPath();
-        }
-        QStringList aOverrideFilenameList = (QStringList() << "blender_dtu_to_godot.py" << "blender_tools.py" << "NodeArrange.py" << "blender_gltf_to_blend.py");
-        foreach(QString filename, aOverrideFilenameList)
-        {
-            QString sOverrideFilePath = sPluginFolder + "/" + filename;
-            QString sTempFilePath = dzApp->getTempPath() + "/" + filename;
-            if (QFileInfo(sOverrideFilePath).exists())
-            {
-                dzApp->log(QString("Found override file (%1), copying to temp folder.").arg(sOverrideFilePath));
-                QFile(sTempFilePath).remove();
-                QFile(sOverrideFilePath).copy(sTempFilePath);
-            }
-        }
-        
-		QString sScriptPath = dzApp->getTempPath() + "/blender_dtu_to_godot.py";
+		QStringList aOverrideFilenameList = (QStringList() << "blender_dtu_to_godot.py" << "blender_tools.py" << "NodeArrange.py" << "blender_gltf_to_blend.py");
+		if (sPluginFolder.isEmpty() == false)
+		{
+			foreach(QString filename, aOverrideFilenameList)
+			{
+				QString sOverrideFilePath = sPluginFolder + "/" + filename;
+				QString sTempFilePath = dzApp->getTempPath() + "/" + filename;
+				// if doesn't exist in override folder, copy from temp
+				if (QFileInfo(sOverrideFilePath).exists() == false)
+				{
+					dzApp->log(QString("Found override file (%1), copying to temp folder.").arg(sOverrideFilePath));
+					bool result = QFile(sTempFilePath).copy(sOverrideFilePath);
+					if (result)
+					{
+						// if successful, use overridepath as scriptpath
+						sScriptFolderPath = QFileInfo(sOverrideFilePath).path();
+					}
+					else
+					{
+						// script does not exist in override path (plug folder) so fallback to using intermediate folder
+						dzApp->log("ERROR: Unable to copy script files to scriptfolder: " + sOverrideFilePath + ", attempting to use intermediate folder...");
+						bUseFallbackScriptFolder = true;
+						break;
+					}
+				}
+				else
+				{
+					// file exists, so use overridepath as scriptpath
+					sScriptFolderPath = QFileInfo(sOverrideFilePath).path();
+				}
+			}
+		}
+		if (bUseFallbackScriptFolder)
+		{
+			foreach(QString filename, aOverrideFilenameList)
+			{
+				QString sFallbackFolder = m_sDestinationPath + "/scripts";
+				if (QDir(sFallbackFolder).exists() == false)
+				{
+					QDir dir;
+					bool result = dir.mkpath(sFallbackFolder);
+					if (!result)
+					{
+						dzApp->log("ERROR: Unable to create fallback folder: " + sFallbackFolder + ", will fallback to using temp folder to store script files...");
+						sScriptFolderPath = dzApp->getTempPath();
+						break;
+					}
+				}
+				QString sOverrideFilePath = sFallbackFolder + "/" + filename;
+				QString sTempFilePath = dzApp->getTempPath() + "/" + filename;
+				// if doesn't exist in override folder, copy from temp
+				if (QFileInfo(sOverrideFilePath).exists() == false)
+				{
+					dzApp->log(QString("Found override file (%1), copying to temp folder.").arg(sOverrideFilePath));
+					bool result = QFile(sTempFilePath).copy(sOverrideFilePath);
+					if (result)
+					{
+						// if successful, use overridepath as scriptpath
+						sScriptFolderPath = QFileInfo(sOverrideFilePath).path();
+					}
+					else
+					{
+						dzApp->log("ERROR: Unable to copy script files to scriptfolder: " + sOverrideFilePath);
+					}
+				}
+				else
+				{
+					sScriptFolderPath = QFileInfo(sOverrideFilePath).path();
+				}
+			}
+
+		}
+
+//		QString sScriptPath = dzApp->getTempPath() + "/blender_dtu_to_godot.py";
+		QString sScriptPath = sScriptFolderPath + "/blender_dtu_to_godot.py";
 		QString sCommandArgs = QString("--background;--log-file;%1;--python-exit-code;%2;--python;%3;%4").arg(sBlenderLogPath).arg(m_nPythonExceptionExitCode).arg(sScriptPath).arg(m_sDestinationFBX);
-        exportProgress->setInfo("Starting Blender Processing...");
+
+		// 4. Generate manual batch file to launch blender scripts
+		QString sBatchString = QString("\"%1\"").arg(m_sBlenderExecutablePath);
+		foreach (QString arg, sCommandArgs.split(";"))
+		{
+			if (arg.contains(" "))
+			{
+				sBatchString += QString(" \"%1\"").arg(arg);
+			}
+			else
+			{
+				sBatchString += " " + arg;
+			}
+		}
+		// write batch
+		QString batchFilePath = m_sDestinationPath + "/manual_blender_script_1.bat";
+		QFile batchFileOut(batchFilePath);
+		batchFileOut.open(QIODevice::WriteOnly);
+		batchFileOut.write(sBatchString.toAscii().constData());
+		batchFileOut.close();
+
+		exportProgress->setInfo("Starting Blender Processing...");
 		bool retCode = executeBlenderScripts(m_sBlenderExecutablePath, sCommandArgs);
 
 		if (m_sAssetType.toLower() == "godot_gltf_blend")
@@ -333,6 +429,27 @@ void DzGodotAction::executeAction()
 			bool retCode = executeBlenderScripts(m_sBlenderExecutablePath, sCommandArgs);
 			QFile(sGltfPath).remove();
 			QFile(sGltfPath.replace(".gltf", ".bin")).remove();
+
+			// 5. Generate manual batch file
+			QString sBatchString = QString("\"%1\"").arg(m_sBlenderExecutablePath);
+			foreach(QString arg, sCommandArgs.split(";"))
+			{
+				if (arg.contains(" "))
+				{
+					sBatchString += QString(" \"%1\"").arg(arg);
+				}
+				else
+				{
+					sBatchString += " " + arg;
+				}
+			}
+			// write batch
+			QString batchFilePath = m_sDestinationPath + "/manual_blender_script_2.bat";
+			QFile batchFileOut(batchFilePath);
+			batchFileOut.open(QIODevice::WriteOnly);
+			batchFileOut.write(sBatchString.toAscii().constData());
+			batchFileOut.close();
+
 		}
 
         exportProgress->setInfo("Daz To Godot: Export Phase Completed.");
