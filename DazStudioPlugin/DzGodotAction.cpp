@@ -430,7 +430,7 @@ void DzGodotAction::executeAction()
 		if (m_sAssetType.toLower() == "godot_gltf_blend")
 		{
 			// execute gltf to blend pathway
-			QString sScriptPath = dzApp->getTempPath() + "/blender_gltf_to_blend.py";
+			QString sScriptPath = sScriptFolderPath + "/blender_gltf_to_blend.py";
 			QString sGltfPath = m_sGodotProjectFolderPath + "/" + m_sAssetName + "/" + m_sAssetName + ".gltf";
 			QString sCommandArgs = QString("--background;--log-file;%1;--python-exit-code;%2;--python;%3;%4").arg(sBlenderLogPath).arg(m_nPythonExceptionExitCode).arg(sScriptPath).arg(sGltfPath);
 			exportProgress->setInfo("Blender Compatibility Mode...");

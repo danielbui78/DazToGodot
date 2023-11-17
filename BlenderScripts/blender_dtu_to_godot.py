@@ -84,10 +84,11 @@ def _main(argv):
     dtu_dict = blender_tools.process_dtu(jsonPath)
 
     daz_generation = dtu_dict["Asset Id"]
-    if ("Genesis8" in daz_generation):
-        blender_tools.apply_tpose_for_g8_g9()
-    elif ("Genesis9" in daz_generation):
-        blender_tools.apply_tpose_for_g8_g9()
+    if (bHasAnimation == False):
+        if ("Genesis8" in daz_generation):
+            blender_tools.apply_tpose_for_g8_g9()
+        elif ("Genesis9" in daz_generation):
+            blender_tools.apply_tpose_for_g8_g9()
 
     # prepare destination folder path
     blenderFilePath = fbxPath.replace(".fbx", ".blend")
@@ -180,7 +181,10 @@ def _main(argv):
         gltfFilePath = gltfFilePath.replace(".gltf", ".glb")
         _add_to_log("DEBUG: saving GLB file to destination: " + gltfFilePath)
         try:
-            bpy.ops.export_scene.gltf(filepath=gltfFilePath, export_format="GLB", use_visible=True, use_selection=True)
+            bpy.ops.export_scene.gltf(filepath=gltfFilePath, export_format="GLB", use_visible=True, use_selection=True, 
+                                      export_animation_mode="ACTIONS", export_bake_animation=True, 
+                                      export_anim_single_armature=True, export_reset_pose_bones=True, 
+                                      export_optimize_animation_keep_anim_armature=True)
             _add_to_log("DEBUG: save completed.")
         except Exception as e:
             _add_to_log("ERROR: unable to save GLB file: " + gltfFilePath)
@@ -195,7 +199,10 @@ def _main(argv):
         gltfFilePath = gltfFilePath.replace(".glb", ".gltf")
         _add_to_log("DEBUG: saving GLTF file to destination: " + gltfFilePath)
         try:
-            bpy.ops.export_scene.gltf(filepath=gltfFilePath, export_format="GLTF_SEPARATE", export_texture_dir="Textures", use_visible=True, use_selection=True)
+            bpy.ops.export_scene.gltf(filepath=gltfFilePath, export_format="GLTF_SEPARATE", export_texture_dir="Textures", use_visible=True, use_selection=True, 
+                                      export_animation_mode="ACTIONS", export_bake_animation=True,
+                                      export_anim_single_armature=True, export_reset_pose_bones=True, 
+                                      export_optimize_animation_keep_anim_armature=True)
             _add_to_log("DEBUG: save completed.")
         except Exception as e:
             _add_to_log("ERROR: unable to save GLTF file: " + gltfFilePath)

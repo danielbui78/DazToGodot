@@ -153,8 +153,53 @@ def remove_unlinked_shader_nodes(mat_name):
         if node not in linked_nodes:
             nodes.remove(node)
 
+# Function to clean F-Curves of an object
+def clean_fcurves(obj, threshold=0.00001):
+    _add_to_log("DEBUG: clean_fcurves(): cleaning fcurves for object: " + obj.name)
+    if obj.animation_data and obj.animation_data.action:
+        fcurves = obj.animation_data.action.fcurves
+        for fcurve in fcurves:
+            keyframe_points = fcurve.keyframe_points
+            i = len(keyframe_points)-1
+            while i > 0:
+                # Check the difference in value between consecutive keyframes
+                if abs(keyframe_points[i].co.y - keyframe_points[i-1].co.y) < threshold:
+                    # If the difference is below the threshold, remove the keyframe
+                    keyframe_points.remove(keyframe_points[i])
+                i -= 1
+
 def apply_tpose_for_g8_g9():
-    _add_to_log("DEBUG: applying t-pose for G8...")
+    _add_to_log("DEBUG: applying t-pose for G8/G9...")
+
+    # Object Mode
+    bpy.ops.object.mode_set(mode="OBJECT")       
+    #retrieve armature name
+    armature_name = bpy.data.armatures[0].name
+    for arm in bpy.data.armatures:
+        if "genesis" in arm.name.lower():
+            armature_name = arm.name
+            break
+
+    # create a list of objects with armature modifier
+    armature_modifier_list = []
+    for obj in bpy.context.scene.objects:
+        if obj.type == "MESH":
+            for mod in obj.modifiers:
+                if mod.type == "ARMATURE" and mod.name == armature_name:
+                    armature_modifier_list.append([obj, mod])
+
+    # if more than 1 key frames present, return without applying t-pose (first keyframe may be a rest pose or t-pose)
+    for obj, mod in armature_modifier_list:
+        arm = mod.object
+        clean_fcurves(arm)
+        if arm.animation_data and arm.animation_data.action:
+            fcurves = arm.animation_data.action.fcurves
+            for fcurve in fcurves:
+                # fcurve.keyframe_points.remove(fcurve.keyframe_points)
+                if len(fcurve.keyframe_points) > 1:
+                    _add_to_log("DEBUG: key frames (" + str(len(fcurve.keyframe_points)) + ") found on armature " + armature_name + ", skipping t-pose for G8/G9...")
+                    return
+
     # select all objects
     bpy.ops.object.select_all(action="SELECT")
     # switch to pose mode
@@ -188,23 +233,14 @@ def apply_tpose_for_g8_g9():
         bpy.context.object.pose.bones["r_thigh"].rotation_mode= "XYZ"
         bpy.context.object.pose.bones["r_thigh"].rotation_euler[2] = 0.0872665
 
+    # if shapes are present in mesh, then return without baking t-pose since blender can not apply armature modifier
+    for obj, mod in armature_modifier_list:
+        if obj.data.shape_keys is not None:
+            _add_to_log("DEBUG: shape keys found, skipping t-pose bake for G8/G9...")
+            return
+
     # Object Mode
-    bpy.ops.object.mode_set(mode="OBJECT")       
-    #retrieve armature name
-    armature_name = bpy.data.armatures[0].name
-    for arm in bpy.data.armatures:
-        if "genesis" in arm.name.lower():
-            armature_name = arm.name
-            break
-
-    # create a list of objects with armature modifier
-    armature_modifier_list = []
-    for obj in bpy.context.scene.objects:
-        if obj.type == "MESH":
-            for mod in obj.modifiers:
-                if mod.type == "ARMATURE" and mod.name == armature_name:
-                    armature_modifier_list.append([obj, mod])
-
+    bpy.ops.object.mode_set(mode="OBJECT")
     # duplicate and apply armature modifier
     for obj, mod in armature_modifier_list:
         _add_to_log("DEBUG: Duplicating armature modifier: " + obj.name + "." + mod.name)
@@ -220,7 +256,13 @@ def apply_tpose_for_g8_g9():
         if len(obj.modifiers) > num_mods:
             new_mod = obj.modifiers[num_mods]
             _add_to_log("DEBUG: Applying armature modifier: " + new_mod.name)
-            result = bpy.ops.object.modifier_apply(modifier=new_mod.name)
+            try:
+                result = bpy.ops.object.modifier_apply(modifier=new_mod.name)
+            except Exception as e:
+                _add_to_log("ERROR: Unable to apply armature modifier: " + str(e))
+                _add_to_log("DEBUG: result=" + str(result) + ", mod.name=" + new_mod.name)
+                bpy.ops.object.modifier_remove(modifier=new_mod.name)     
+                return
             _add_to_log("DEBUG: result=" + str(result) + ", mod.name=" + new_mod.name)
         else:
             _add_to_log("DEBUG: Unable to retrieve duplicate, applying original: " + mod.name)
@@ -553,7 +595,7 @@ def process_material(mat, lowres_mode=None):
             bsdf_inputs["Metallic"].default_value = refraction_weight
         if (cutoutMap != ""):
             if (not os.path.exists(cutoutMap)):
-                print("ERROR: process_dtu(): cutout map file does not exist, skipping...")
+                _add_to_log("ERROR: process_dtu(): cutout map file does not exist, skipping...")
             else:
                 # create image texture node
                 node_tex = nodes.new("ShaderNodeTexImage")
@@ -603,7 +645,7 @@ def process_dtu(jsonPath, lowres_mode=None):
         try:
             process_material(mat, lowres_mode)
         except Exception as e:
-            print("ERROR: exception caught while processing material: " + mat["Material Name"] + ", " + str(e))
+            _add_to_log("ERROR: exception caught while processing material: " + mat["Material Name"] + ", " + str(e))
 
     _add_to_log("DEBUG: process_dtu(): done processing DTU: " + jsonPath)
     return jsonObj
