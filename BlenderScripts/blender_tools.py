@@ -590,6 +590,8 @@ def process_dtu(jsonPath, lowres_mode=None):
     # delete all nodes from materials so that we can rebuild them
     for mat in materialsList:
         matName = mat["Material Name"]
+        if matName not in bpy.data.materials:
+            continue
         data = bpy.data.materials[matName]
         nodes = data.node_tree.nodes
         for node in nodes:
@@ -598,7 +600,10 @@ def process_dtu(jsonPath, lowres_mode=None):
 
     # find and process each DTU material node
     for mat in materialsList:
-        process_material(mat, lowres_mode)
+        try:
+            process_material(mat, lowres_mode)
+        except Exception as e:
+            print("ERROR: exception caught while processing material: " + mat["Material Name"] + ", " + str(e))
 
     _add_to_log("DEBUG: process_dtu(): done processing DTU: " + jsonPath)
     return jsonObj
