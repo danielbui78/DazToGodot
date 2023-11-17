@@ -282,7 +282,15 @@ void DzGodotAction::executeAction()
 		dir.mkpath(m_sRootFolder);
 		exportProgress->step();
 
-		exportHD(exportProgress);
+		bool bExportResult = exportHD(exportProgress);
+
+		if (!bExportResult)
+		{
+			QMessageBox::information(0, "Daz To Godot Bridge",
+				tr("Export cancelled."), QMessageBox::Ok);
+			exportProgress->finish();
+			return;
+		}
 
         exportProgress->setInfo("Preparing Blender Scripts...");
         
