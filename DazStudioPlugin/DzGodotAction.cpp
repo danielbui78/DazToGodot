@@ -608,14 +608,18 @@ bool DzGodotAction::readGui(DZ_BRIDGE_NAMESPACE::DzBridgeDialog* BridgeDialog)
 
 	if (pGodotDialog)
 	{
-		m_sGodotProjectFolderPath = pGodotDialog->m_wGodotProjectFolderEdit->text().replace("\\", "/");
-		m_sBlenderExecutablePath = pGodotDialog->m_wBlenderExecutablePathEdit->text().replace("\\", "/");
+//		m_sGodotProjectFolderPath = pGodotDialog->m_wGodotProjectFolderEdit->text().replace("\\", "/");
+//		m_sBlenderExecutablePath = pGodotDialog->m_wBlenderExecutablePathEdit->text().replace("\\", "/");
+
+		// Collect the values from the dialog fields
+		if (m_sGodotProjectFolderPath == "" || m_nNonInteractiveMode == 0) m_sGodotProjectFolderPath = pGodotDialog->m_wGodotProjectFolderEdit->text().replace("\\", "/");
+		if (m_sBlenderExecutablePath == "" || m_nNonInteractiveMode == 0) m_sBlenderExecutablePath = pGodotDialog->m_wBlenderExecutablePathEdit->text().replace("\\", "/");
+
 	}
 	else
 	{
 		// TODO: issue error and fail gracefully
-		m_sGodotProjectFolderPath = "";
-		m_sBlenderExecutablePath = "";
+		dzApp->log("ERROR: DazToGodot: Godot Dialog was not initialized.  Cancelling operation...");
 
 		return false;
 	}
