@@ -148,71 +148,35 @@ function do_job(relative_asset_path)
 
 function main()
 {
+	// get script file path using dzscript
+
+	var sScriptPath = new DzFileInfo(getScriptFileName()).path();
 	// Load string list from newline separated file
-	var sFilename = "C:/dev/TopSecret/automated_export_arms_test.joblist"
+	var sFilename = sScriptPath + "/automation.joblist";
 	// use Daz Script to read file
 	var oFile = new DzFile(sFilename)
-	oFile.open(DzFile.ReadOnly)
+	if (!oFile.open(DzFile.ReadOnly))
+	{
+		print("ERROR reading file: " + sFilename);
+		return;
+	}
 	// read entire contents and split by new line or comma
 	var aFileContents = oFile.readLines()
 
 	// loop through each line
+	var aRelativePath = new Array();
 	for (i=0; i < aFileContents.length; i++)
 	{
 		// print line for debugging
-		print("DEBUG: line " + i + " = " + aFileContents[i])
+		// store line in variable and strip newline and quotes
+		var cleaned_line = aFileContents[i].replace(/(\r\n|\n|\r)/gm, "");
+		// add to array
+		if (cleaned_line != "")
+		{
+			print("DEBUG: line " + i + " = " + cleaned_line)
+			aRelativePath.push(cleaned_line);
+		}
 	}
-	return;
-
-	var aRelativePath = new Array()
-	i = 0
-	/*
-	aRelativePath[i++] = "/people/genesis 8 male/characters/mr woo 8.duf"
-	aRelativePath[i++] = "/people/genesis 8 female/characters/mrs chow 8.duf"
-	aRelativePath[i++] = "/people/genesis 8 male/characters/floyd 8.duf"
-	aRelativePath[i++] = "/people/genesis 8 male/characters/ollie 8.duf"
-	
-	aRelativePath[i++] = "/people/genesis 8 female/characters/victoria 8.1.duf"
-	aRelativePath[i++] = "/people/genesis 9/characters/victoria 9.duf"
-	aRelativePath[i++] = "/people/genesis 9/characters/minerva 9.duf"
-	aRelativePath[i++] = "/people/genesis 9/characters/michael 9.duf"
-	aRelativePath[i++] = "/people/genesis 9/characters/thimor 9 giant.duf"
-	aRelativePath[i++] = "/people/genesis 9/characters/pixie 9.duf"
-	aRelativePath[i++] = "/people/genesis 8 female/characters/kala 8.duf"
-	
-	aRelativePath[i++] = "/people/genesis 8 male/characters/lord of the abyss hd.duf"
-	
-	aRelativePath[i++] = "/people/genesis 8 female/characters/white priestess 8.1 hd.duf"
-	aRelativePath[i++] = "/people/genesis 8.1 male/characters/war goblin hd.duf"
-	aRelativePath[i++] = "/people/genesis 8 female/characters/kiko 8.1.duf"
-	aRelativePath[i++] = "/people/genesis 8 female/characters/coral 8.1 human.duf"
-	aRelativePath[i++] = "/people/genesis 8 male/characters/zale 8.1 human.duf"
-	aRelativePath[i++] = "/people/genesis 8 female/characters/august 8.1.duf"
-	aRelativePath[i++] = "/people/genesis 8 female/characters/millawa 8.duf"
-	aRelativePath[i++] = "/people/genesis 8 female/characters/freja 8.1.duf"
-	aRelativePath[i++] = "/people/genesis 8 female/characters/twosret 8.duf"
-	aRelativePath[i++] = "/people/genesis 8 male/characters/drutherson 8.duf"
-	aRelativePath[i++] = "/people/genesis 8 male/characters/kwan 8.duf"
-	aRelativePath[i++] = "/people/genesis 8 female/characters/kayo 8.duf"
-	aRelativePath[i++] = "/people/genesis 8 male/characters/leroy 8.duf"
-	
-	aRelativePath[i++] = "/people/genesis 8 male/characters/soto/dolb/dolb.duf"
-	aRelativePath[i++] = "/people/genesis 8 male/characters/ogre hd with horn.duf"
-	aRelativePath[i++] = "/people/genesis 8 female/characters/hell ambassador hd.duf"
-	aRelativePath[i++] = "/people/genesis 8 male/characters/hobgoblin hd.duf"
-	aRelativePath[i++] = "/people/genesis 8 female/characters/raw pearlette.duf"
-	aRelativePath[i++] = "/people/genesis 8 female/characters/raw street mouse.duf"
-	aRelativePath[i++] = "/people/genesis 8 male/characters/summer camp killer hd.duf"
-	aRelativePath[i++] = "/people/genesis 8 male/characters/puppet/fp puppet.duf"
-	aRelativePath[i++] = "/people/genesis 8 male/characters/bullwarg hd.duf"
-	aRelativePath[i++] = "/people/genesis 8 female/characters/toon princess.duf"
-	*/
-	
-	aRelativePath[i++] = "/people/genesis 9/characters/victoria 9.duf"
-	aRelativePath[i++] = "/people/genesis 9/characters/minerva 9.duf"
-	aRelativePath[i++] = "/people/genesis 9/characters/michael 9.duf"
-	aRelativePath[i++] = "/people/genesis 9/characters/thimor 9 giant.duf"
-	aRelativePath[i++] = "/people/genesis 9/characters/pixie 9.duf"
 	
 	for (i=0; i < aRelativePath.length; i++)
 	{
