@@ -420,7 +420,7 @@ void DzGodotAction::executeAction()
 		// write batch
 		QString batchFilePath = m_sDestinationPath + "/manual_blender_script_1.bat";
 		QFile batchFileOut(batchFilePath);
-		batchFileOut.open(QIODevice::WriteOnly);
+		batchFileOut.open(QIODevice::WriteOnly | QIODevice::OpenModeFlag::Truncate);
 		batchFileOut.write(sBatchString.toAscii().constData());
 		batchFileOut.close();
 
@@ -454,7 +454,7 @@ void DzGodotAction::executeAction()
 			// write batch
 			QString batchFilePath = m_sDestinationPath + "/manual_blender_script_2.bat";
 			QFile batchFileOut(batchFilePath);
-			batchFileOut.open(QIODevice::WriteOnly);
+			batchFileOut.open(QIODevice::WriteOnly | QIODevice::OpenModeFlag::Truncate);
 			batchFileOut.write(sBatchString.toAscii().constData());
 			batchFileOut.close();
 
@@ -602,7 +602,11 @@ QString DzGodotAction::readGuiRootFolder()
 
 bool DzGodotAction::readGui(DZ_BRIDGE_NAMESPACE::DzBridgeDialog* BridgeDialog)
 {
-	DzBridgeAction::readGui(BridgeDialog);
+	bool bResult = DzBridgeAction::readGui(BridgeDialog);
+	if (!bResult)
+	{
+		return false;
+	}
 
 	DzGodotDialog* pGodotDialog = qobject_cast<DzGodotDialog*>(BridgeDialog);
 
@@ -691,3 +695,19 @@ bool DzGodotAction::isAssetAnimationCompatible(QString sAssetType)
 }
 
 #include "moc_DzGodotAction.cpp"
+
+DZ_BRIDGE_NAMESPACE::DzBridgeDialog* DzGodotAction::getBridgeDialog()
+{
+	if (m_bridgeDialog == nullptr)
+	{
+		DzMainWindow* mw = dzApp->getInterface();
+		if (!mw)
+		{
+			return nullptr;
+		}
+		m_bridgeDialog = new DzGodotDialog(mw);
+		m_bridgeDialog->setBridgeActionObject(this);
+	}
+
+	return m_bridgeDialog;
+}

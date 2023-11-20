@@ -23,6 +23,8 @@ class DzGodotAction : public DZ_BRIDGE_NAMESPACE::DzBridgeAction {
 public:
 	DzGodotAction();
 
+	Q_INVOKABLE virtual DZ_BRIDGE_NAMESPACE::DzBridgeDialog* getBridgeDialog() override;
+
 	Q_INVOKABLE QString getGodotProjectFolderPath() { return this->m_sGodotProjectFolderPath; };
 	Q_INVOKABLE void setGodotProjectFolderPath(QString arg_Filename) { this->m_sGodotProjectFolderPath = arg_Filename; };
 	Q_INVOKABLE QString getBlenderExecutablePath() { return this->m_sBlenderExecutablePath; };
