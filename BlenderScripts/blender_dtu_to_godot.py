@@ -83,6 +83,11 @@ def _main(argv):
     _add_to_log("DEBUG: main(): loading json file: " + str(jsonPath))
     dtu_dict = blender_tools.process_dtu(jsonPath)
 
+    if "Has Animation" in dtu_dict:
+        bHasAnimation = dtu_dict["Has Animation"]
+    else:
+        bHasAnimation = False
+
     daz_generation = dtu_dict["Asset Id"]
     if (bHasAnimation == False):
         if ("Genesis8" in daz_generation):
