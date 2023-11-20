@@ -1,0 +1,205 @@
+// DAZ Studio version 4.21.0.5 filetype DAZ Script
+
+function Run_Exporter2(oBridge, sExportFilename, sAssetType, sRootFolder, sExportFolder, sProductName, sComponentName, arrayMorphList)
+{
+	var obj = oBridge;
+	obj.setNonInteractiveMode(1);
+
+	// obj.UseRelativePaths: set true for relative Daz Library runtime paths
+	//                       set false for absolute filepath
+	// Default to true to work with interactive mode
+	obj.setUseRelativePaths(false);
+	// obj.UseRelativePaths = true;
+
+	// obj.ExportFilename: filename stem for DTU and FBX file
+	// Can not have spaces or hyphen.  Underscore is OK
+	// Leave blank to default to sanitized Scene Node Label
+	if (sExportFilename != "")
+	{
+		obj.setExportFilename(sExportFilename);
+	}
+
+	// obj.AssetType: "SkeletalMesh" [DEFAULT], "StaticMesh", "Animation", "Environment", "Pose"
+	if (sAssetType != "")
+	{
+		obj.setAssetType(sAssetType);
+	}
+
+	// obj.RootFolder: path to destination root
+	// If folder or path doesn't exist, it will be created
+	if (sRootFolder != "")
+	{
+		obj.setRootFolder(sRootFolder);
+	}
+
+	// obj.ExportFolder: name folder containing DTU/FBX
+	// Leave blank to default to sanitized Scene Node Label like ExportFilename
+	if (sExportFolder != "")
+	{
+		obj.setExportFolder(sExportFolder);
+	}
+
+	// obj.ProductName: Daz Store Product Name (or anything you want), can have spaces & special characters
+	if (sProductName != "")
+	{
+		obj.setProductName(sProductName);
+	}
+
+	// obj.ProductComponentName: Friendly Name for component within Product
+	// Put frienldy pose name or material name here
+	if (sComponentName != "")
+	{
+		obj.setProductComponentName(sComponentName);
+	}
+
+	// obj.MorphList: String array of morphs to convert into blendshapes within FBX.
+	// Leave empty if you do not want to export any blendshapes.
+	//obj.MorphList = ["CTRLVictoria8_1", "FHMVictoria8_1", "FBMVictoria8_1"]
+	if (arrayMorphList.length > 0)
+	{
+		obj.setMorphList(arrayMorphList);
+	}
+
+	obj.setGenerateNormalMaps(true);
+
+	obj.executeAction()
+
+	var sReturnString = obj.getRootFolder() + "/" + obj.getExportFolder() + "/" + obj.getExportFilename() + ".dtu"
+
+	return sReturnString;
+}
+
+function do_job(relative_asset_path)
+{
+	App.log("DEBUG: exporting asset: " + relative_asset_path);	
+	
+	var obj = DzGodotAction()
+	obj.resetToDefaults();
+	sExportFilename = ""
+	sAssetType = "Godot_Glb"
+	sRootFolder = "C:/CustomRoot"
+	sExportFolder = "CustomFolder"
+	sProductName = ""
+	sComponentName = ""
+	arrayMorphList = []
+	sGodotProjectFolderPath = "C:/CustomRoot/FinalOutput"
+	sBlenderExecutablePath = "C:/Program Files/Blender Foundation/Blender 3.6/blender.exe"
+	sGeograftFilePath = "C:/dev/TopSecret/g9 geograft arms.duf"
+
+	obj.setGodotProjectFolderPath(sGodotProjectFolderPath)
+	obj.setBlenderExecutablePath(sBlenderExecutablePath)
+
+	// For next dzbridge version
+//	bGenerateNormalMaps = true
+
+	Scene.clear()
+	var oContentMgr = App.getContentMgr()
+
+	// add base figure
+	var sFullPath = oContentMgr.findFile(relative_asset_path)
+	oContentMgr.openFile(sFullPath)
+
+	// get selection
+	var pNode = Scene.getSelectedNode(0)
+
+	// loop through and delete all attached children (except bones)
+	var aChildren = pNode.getNodeChildren()
+	for (j=0; j < aChildren.length; j++)
+	{
+		var pChild = aChildren[j]
+		if (pChild.inherits("DzFigure") == true)
+		{
+			// remove child from scene
+			pChild.setVisible(false);
+			pChild.setFollowTarget(0);
+			print("DEBUG: child to hide name = " + pChild.getLabel() + ", from class = " + pChild.className())
+			pNode.removeNodeChild(pChild);
+		}
+		else
+		{
+			print("DEBUG: child to skip name = " + pChild.getLabel() + ", from class = " + pChild.className())
+		}
+	}
+
+	// merge arm geograft
+	var sFullPath = oContentMgr.findFile(sGeograftFilePath)
+	result = oContentMgr.openFile(sFullPath, true)
+	if (result)
+	{
+		geograft_node = Scene.findNodeByLabel("G9 arm geografts");
+		pNode.addNodeChild(geograft_node);
+		geograft_node.setFollowTarget(pNode.getSkeleton());
+		print("geografted successfully");
+	}
+	else
+	{
+		print("geografting failed");
+	}
+
+	sAssetName = obj.cleanString(pNode.getLabel())
+
+	Run_Exporter2(obj, "", sAssetType, sRootFolder, sExportFolder, sProductName, sComponentName, arrayMorphList);
+	obj.deleteLater();
+	obj = 0;
+}
+
+function main()
+{
+	var aRelativePath = new Array()
+	i = 0
+	/*
+	aRelativePath[i++] = "/people/genesis 8 male/characters/mr woo 8.duf"
+	aRelativePath[i++] = "/people/genesis 8 female/characters/mrs chow 8.duf"
+	aRelativePath[i++] = "/people/genesis 8 male/characters/floyd 8.duf"
+	aRelativePath[i++] = "/people/genesis 8 male/characters/ollie 8.duf"
+	
+	aRelativePath[i++] = "/people/genesis 8 female/characters/victoria 8.1.duf"
+	aRelativePath[i++] = "/people/genesis 9/characters/victoria 9.duf"
+	aRelativePath[i++] = "/people/genesis 9/characters/minerva 9.duf"
+	aRelativePath[i++] = "/people/genesis 9/characters/michael 9.duf"
+	aRelativePath[i++] = "/people/genesis 9/characters/thimor 9 giant.duf"
+	aRelativePath[i++] = "/people/genesis 9/characters/pixie 9.duf"
+	aRelativePath[i++] = "/people/genesis 8 female/characters/kala 8.duf"
+	
+	aRelativePath[i++] = "/people/genesis 8 male/characters/lord of the abyss hd.duf"
+	
+	aRelativePath[i++] = "/people/genesis 8 female/characters/white priestess 8.1 hd.duf"
+	aRelativePath[i++] = "/people/genesis 8.1 male/characters/war goblin hd.duf"
+	aRelativePath[i++] = "/people/genesis 8 female/characters/kiko 8.1.duf"
+	aRelativePath[i++] = "/people/genesis 8 female/characters/coral 8.1 human.duf"
+	aRelativePath[i++] = "/people/genesis 8 male/characters/zale 8.1 human.duf"
+	aRelativePath[i++] = "/people/genesis 8 female/characters/august 8.1.duf"
+	aRelativePath[i++] = "/people/genesis 8 female/characters/millawa 8.duf"
+	aRelativePath[i++] = "/people/genesis 8 female/characters/freja 8.1.duf"
+	aRelativePath[i++] = "/people/genesis 8 female/characters/twosret 8.duf"
+	aRelativePath[i++] = "/people/genesis 8 male/characters/drutherson 8.duf"
+	aRelativePath[i++] = "/people/genesis 8 male/characters/kwan 8.duf"
+	aRelativePath[i++] = "/people/genesis 8 female/characters/kayo 8.duf"
+	aRelativePath[i++] = "/people/genesis 8 male/characters/leroy 8.duf"
+	
+	aRelativePath[i++] = "/people/genesis 8 male/characters/soto/dolb/dolb.duf"
+	aRelativePath[i++] = "/people/genesis 8 male/characters/ogre hd with horn.duf"
+	aRelativePath[i++] = "/people/genesis 8 female/characters/hell ambassador hd.duf"
+	aRelativePath[i++] = "/people/genesis 8 male/characters/hobgoblin hd.duf"
+	aRelativePath[i++] = "/people/genesis 8 female/characters/raw pearlette.duf"
+	aRelativePath[i++] = "/people/genesis 8 female/characters/raw street mouse.duf"
+	aRelativePath[i++] = "/people/genesis 8 male/characters/summer camp killer hd.duf"
+	aRelativePath[i++] = "/people/genesis 8 male/characters/puppet/fp puppet.duf"
+	aRelativePath[i++] = "/people/genesis 8 male/characters/bullwarg hd.duf"
+	aRelativePath[i++] = "/people/genesis 8 female/characters/toon princess.duf"
+	*/
+	
+	aRelativePath[i++] = "/people/genesis 9/characters/victoria 9.duf"
+	aRelativePath[i++] = "/people/genesis 9/characters/minerva 9.duf"
+	aRelativePath[i++] = "/people/genesis 9/characters/michael 9.duf"
+	aRelativePath[i++] = "/people/genesis 9/characters/thimor 9 giant.duf"
+	aRelativePath[i++] = "/people/genesis 9/characters/pixie 9.duf"
+	
+	for (i=0; i < aRelativePath.length; i++)
+	{
+		do_job(aRelativePath[i]);
+	}
+	
+}
+
+main();
