@@ -72,9 +72,8 @@ function Run_Exporter2(oBridge, sExportFilename, sAssetType, sRootFolder, sExpor
 function do_job(relative_asset_path)
 {
 	App.log("DEBUG: exporting asset: " + relative_asset_path);	
-	
+
 	var obj = DzGodotAction()
-	obj.resetToDefaults();
 	sExportFilename = ""
 	sAssetType = "Godot_Glb"
 	sRootFolder = "C:/CustomRoot"
@@ -86,13 +85,17 @@ function do_job(relative_asset_path)
 	sBlenderExecutablePath = "C:/Program Files/Blender Foundation/Blender 3.6/blender.exe"
 	sGeograftFilePath = "C:/dev/TopSecret/g9 geograft arms.duf"
 
-	obj.setGodotProjectFolderPath(sGodotProjectFolderPath)
-	obj.setBlenderExecutablePath(sBlenderExecutablePath)
-
 	// For next dzbridge version
 //	bGenerateNormalMaps = true
 
 	Scene.clear()
+	Scene.setPrimarySelection(0);
+
+	// reset bridge after clearing scene
+	obj.resetToDefaults();
+	obj.setGodotProjectFolderPath(sGodotProjectFolderPath)
+	obj.setBlenderExecutablePath(sBlenderExecutablePath)
+
 	var oContentMgr = App.getContentMgr()
 
 	// add base figure
