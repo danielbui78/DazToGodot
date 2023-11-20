@@ -148,6 +148,22 @@ function do_job(relative_asset_path)
 
 function main()
 {
+	// Load string list from newline separated file
+	var sFilename = "C:/dev/TopSecret/automated_export_arms_test.joblist"
+	// use Daz Script to read file
+	var oFile = new DzFile(sFilename)
+	oFile.open(DzFile.ReadOnly)
+	// read entire contents and split by new line or comma
+	var aFileContents = oFile.readLines()
+
+	// loop through each line
+	for (i=0; i < aFileContents.length; i++)
+	{
+		// print line for debugging
+		print("DEBUG: line " + i + " = " + aFileContents[i])
+	}
+	return;
+
 	var aRelativePath = new Array()
 	i = 0
 	/*
