@@ -2,6 +2,29 @@
 
 // get script file path using dzscript
 var sScriptPath = new DzFileInfo(getScriptFileName()).path();
+var sRootFolder = ""
+var sExportFolder = ""
+var sGodotProjectFolderPath = ""
+var sBlenderExecutablePath = ""
+var sGeograftFilePath = ""	
+
+// platform specific paths
+if (App.platform() == 0)
+{
+	sRootFolder = "C:/CustomRoot"
+	sExportFolder = "CustomFolder"
+	sGodotProjectFolderPath = "C:/CustomRoot/FinalOutput"
+	sBlenderExecutablePath = "C:/Program Files/Blender Foundation/Blender 3.6/blender.exe"
+	sGeograftFilePath = "C:/dev/TopSecret/g9 geograft arms.duf"	
+}
+else if (App.platform() == 1)
+{
+	sRootFolder = "/Volumes/SSD_2TB/Top Secret Project/Intermediate"
+	sExportFolder = "Test"
+	sGodotProjectFolderPath = "/Volumes/SSD_2TB/Top Secret Project/FinalOutput"
+	sBlenderExecutablePath = "/Applications/Blender 3.6.app/Contents/MacOS/Blender"
+	sGeograftFilePath = sScriptPath + "/G9 geograft arms.duf"	
+}
 
 function Run_Exporter2(oBridge, sExportFilename, sAssetType, sRootFolder, sExportFolder, sProductName, sComponentName, arrayMorphList)
 {
@@ -83,21 +106,10 @@ function do_job(relative_asset_path)
 	sComponentName = ""
 	arrayMorphList = []
 
-	if (App.platform() == 0)
+	if (App.platform() != 0 && App.platform() != 1)
 	{
-		sRootFolder = "C:/CustomRoot"
-		sExportFolder = "CustomFolder"
-		sGodotProjectFolderPath = "C:/CustomRoot/FinalOutput"
-		sBlenderExecutablePath = "C:/Program Files/Blender Foundation/Blender 3.6/blender.exe"
-		sGeograftFilePath = "C:/dev/TopSecret/g9 geograft arms.duf"	
-	}
-	else if (App.platform() == 1)
-	{
-		sRootFolder = "/Volumes/SSD_2TB/Top Secret Project/Intermediate"
-		sExportFolder = "Test"
-		sGodotProjectFolderPath = "/Volumes/SSD_2TB/Top Secret Project/FinalOutput"
-		sBlenderExecutablePath = "/Applications/Blender 3.6.app/Contents/MacOS/Blender"
-		sGeograftFilePath = sScriptPath + "/G9 geograft arms.duf"	
+		print("ERROR: unknown platform, aborting.");
+		return;
 	}
 
 	// For next dzbridge version
