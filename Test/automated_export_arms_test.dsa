@@ -1,5 +1,8 @@
 // DAZ Studio version 4.21.0.5 filetype DAZ Script
 
+// get script file path using dzscript
+var sScriptPath = new DzFileInfo(getScriptFileName()).path();
+
 function Run_Exporter2(oBridge, sExportFilename, sAssetType, sRootFolder, sExportFolder, sProductName, sComponentName, arrayMorphList)
 {
 	var obj = oBridge;
@@ -76,14 +79,26 @@ function do_job(relative_asset_path)
 	var obj = DzGodotAction()
 	sExportFilename = ""
 	sAssetType = "Godot_Glb"
-	sRootFolder = "C:/CustomRoot"
-	sExportFolder = "CustomFolder"
 	sProductName = ""
 	sComponentName = ""
 	arrayMorphList = []
-	sGodotProjectFolderPath = "C:/CustomRoot/FinalOutput"
-	sBlenderExecutablePath = "C:/Program Files/Blender Foundation/Blender 3.6/blender.exe"
-	sGeograftFilePath = "C:/dev/TopSecret/g9 geograft arms.duf"
+
+	if (App.platform() == 0)
+	{
+		sRootFolder = "C:/CustomRoot"
+		sExportFolder = "CustomFolder"
+		sGodotProjectFolderPath = "C:/CustomRoot/FinalOutput"
+		sBlenderExecutablePath = "C:/Program Files/Blender Foundation/Blender 3.6/blender.exe"
+		sGeograftFilePath = "C:/dev/TopSecret/g9 geograft arms.duf"	
+	}
+	else if (App.platform() == 1)
+	{
+		sRootFolder = "/Volumes/SSD_2TB/Top Secret Project/Intermediate"
+		sExportFolder = "Test"
+		sGodotProjectFolderPath = "/Volumes/SSD_2TB/Top Secret Project/FinalOutput"
+		sBlenderExecutablePath = "/Applications/Blender 3.6.app/Contents/MacOS/Blender"
+		sGeograftFilePath = sScriptPath + "/G9 geograft arms.duf"	
+	}
 
 	// For next dzbridge version
 //	bGenerateNormalMaps = true
@@ -125,7 +140,13 @@ function do_job(relative_asset_path)
 	}
 
 	// merge arm geograft
+	print("DEBUG: sGeograftFilePath = " + sGeograftFilePath);
 	var sFullPath = oContentMgr.findFile(sGeograftFilePath)
+	if (sFullPath == "")
+	{
+		sFullPath = sGeograftFilePath;
+	}
+	print("DEBUG: sFullPath = " + sFullPath);
 	result = oContentMgr.openFile(sFullPath, true)
 	if (result)
 	{
@@ -148,9 +169,7 @@ function do_job(relative_asset_path)
 
 function main()
 {
-	// get script file path using dzscript
 
-	var sScriptPath = new DzFileInfo(getScriptFileName()).path();
 	// Load string list from newline separated file
 	var sFilename = sScriptPath + "/automation.joblist";
 	// use Daz Script to read file
