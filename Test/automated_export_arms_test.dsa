@@ -97,6 +97,13 @@ function Run_Exporter2(oBridge, sExportFilename, sAssetType, sRootFolder, sExpor
 
 function do_job(relative_asset_path)
 {
+	// if sGodotProjectFolderPath does not exist, create it
+	var oGodotProjectFolder = new DzDir(sGodotProjectFolderPath);
+	if (!oGodotProjectFolder.exists())
+	{
+		oGodotProjectFolder.mkpath(".");
+	}
+
 	App.log("DEBUG: exporting asset: " + relative_asset_path);	
 
 	var obj = DzGodotAction()
