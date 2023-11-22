@@ -63,19 +63,15 @@ function main()
 		var contentTypeToFind = "Actor/Character";
 
 		var matchingAssets = parseXML(xmlData, categoryToFind, compatibilityToFind);
-	
+		// for each asset, extract Asset VALUE="" into string
+		for (var i = 0; i < matchingAssets.length; i++) {
+			var assetString = matchingAssets[i];
+			var assetValue = assetString.substring(assetString.indexOf("VALUE=\"") + "VALUE=\"".length);
+			assetValue = assetValue.substring(0, assetValue.indexOf("\""));
+			print(assetValue);
+		}
+
 		print()
-		oProduct.update();
-		var result = oProduct.updateAssets();
-		if (result) 
-		{
-			numAssets = oProduct.getNumAssets();
-			print("Updated Num Assets = " + numAssets);
-		}
-		else
-		{
-			print("ERROR: unable to perform updateAssets()");
-		}
 		
 	}
 	
