@@ -1,0 +1,85 @@
+// DAZ Studio version 4.22.0.1 filetype DAZ Script
+
+function parseXML(xmlString, categorySearch, compatibilitySearch, contentTypeSearch) 
+{
+    var assets = []; // Array to hold matching assets
+    var pos = 0; // Variable to track position in the string
+
+    while (pos < xmlString.length) {
+        var assetIndex = xmlString.indexOf("<Asset VALUE=", pos);
+        if (assetIndex === -1) break; // No more <Asset> tags found
+
+        var assetEndIndex = xmlString.indexOf("</Asset>", assetIndex) + "</Asset>".length;
+        var assetString = xmlString.substring(assetIndex, assetEndIndex);
+
+        // Search for Category within this Asset
+        var categoryIndex = assetString.indexOf("<Category VALUE=\"" + categorySearch );
+        var compatibilityIndex = assetString.indexOf("<Compatibility VALUE=\"" + compatibilitySearch );
+        var contentTypeIndex = assetString.indexOf("<ContentType VALUE=\"" + contentTypeSearch );
+
+        // If both Category and Compatibility are found within this Asset tag
+        if (categoryIndex !== -1 && compatibilityIndex !== -1) {
+        	print("I found it!");
+        	print("\n\n" + assetString + "\n\n");
+            assets.push(assetString); // Add the whole Asset string or just the specific VALUE
+        }
+
+        pos = assetEndIndex; // Move past this Asset
+    }
+
+    return assets; // Return array of matching assets
+}
+
+function main() 
+{
+	var oAssetMgr = App.getAssetMgr();
+
+	var guid = "625e62f2-ef03-4397-9e82-0627e04c0059";
+	var oProduct = oAssetMgr.findProductByGuid(guid);
+	print(oProduct.getContainerName());
+	
+	var numAssets = oProduct.getNumAssets();
+	var bIsInstalled = oProduct.isInstalled;
+	
+	print("Num Assets=" + numAssets + ", Installed=" + bIsInstalled );
+	print();
+	
+	if (!bIsInstalled)
+	{
+		print("Updating asset metadata...");
+		print("MetaData Valid=" + oProduct.isMetadataValid);
+		print("Cloud Owned=" + oProduct.isCloudOwned);
+		print("Cloud Installed=" + oProduct.isCloudInstalled);
+		print("Cloud Metadata=" + oProduct.hasCloudMetadata);
+		print("Last updated=" + oProduct.dateLastUpdated);
+//		print("Metadata XML:\n" + oProduct.getMetadataXML());	
+		var xmlString = oProduct.getMetadataXML();
+
+		
+			// Example usage:
+		var xmlData = xmlString;
+		var categoryToFind = "/Default/Figures/People";
+		var compatibilityToFind = "/Genesis 9/Base";
+		var contentTypeToFind = "Actor/Character";
+
+		var matchingAssets = parseXML(xmlData, categoryToFind, compatibilityToFind);
+	
+		print()
+		oProduct.update();
+		var result = oProduct.updateAssets();
+		if (result) 
+		{
+			numAssets = oProduct.getNumAssets();
+			print("Updated Num Assets = " + numAssets);
+		}
+		else
+		{
+			print("ERROR: unable to perform updateAssets()");
+		}
+		
+	}
+	
+}
+
+main();
+print("\n\nScript Complete.\n\n");

@@ -27,7 +27,7 @@ function processCategories(oProduct) {
 	for (var i = 0; i < aCategories.length; i++) {
 //		print("  " + aCategories[i]);
 		if (aCategories[i] == "/Default/Figures/People") {
-//			print("Product: " + oProduct.getContainerName() + "[" +oProduct.token +  "]" + " has category: " + aCategories[i]);
+			print("Product: " + oProduct.getContainerName() + "[" +oProduct.token +  "]" + " has category: " + aCategories[i]);
 			return true;
 		}
 	}
@@ -46,7 +46,10 @@ function processContainer(oContainer, oAssetMgr) {
 		{
 			bIsHumanoidFigure = processCategories(oChildContainer);
 			var bIsInstalled = oChildContainer.isInstalled;
-			processAssets(oChildContainer, oAssetMgr);
+			if (!bIsInstalled) {
+				processAssets(oChildContainer, oAssetMgr);
+				exit(0);
+			}
 		}
 	}
 }
