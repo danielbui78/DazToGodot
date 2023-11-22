@@ -17,6 +17,35 @@
 **********************************************************************/
 // Source: http://docs.daz3d.com/doku.php/public/software/dazstudio/4/referenceguide/scripting/api_reference/samples/metadata/list_products/start
 
+function processXml(xmlString, categorySearch, compatibilitySearch, contentTypeSearch) 
+{
+    var assets = []; // Array to hold matching assets
+    var pos = 0; // Variable to track position in the string
+
+    while (pos < xmlString.length) {
+        var assetIndex = xmlString.indexOf("<Asset VALUE=", pos);
+        if (assetIndex === -1) break; // No more <Asset> tags found
+
+        var assetEndIndex = xmlString.indexOf("</Asset>", assetIndex) + "</Asset>".length;
+        var assetString = xmlString.substring(assetIndex, assetEndIndex);
+
+        // Search for Category within this Asset
+        var categoryIndex = assetString.indexOf("<Category VALUE=\"" + categorySearch );
+        var compatibilityIndex = assetString.indexOf("<Compatibility VALUE=\"" + compatibilitySearch );
+        var contentTypeIndex = assetString.indexOf("<ContentType VALUE=\"" + contentTypeSearch );
+
+        // If both Category and Compatibility are found within this Asset tag
+        if (categoryIndex !== -1 && compatibilityIndex !== -1) {
+//        	print("I found it!");
+//        	print("\n\n" + assetString + "\n\n");
+            assets.push(assetString); // Add the whole Asset string or just the specific VALUE
+        }
+
+        pos = assetEndIndex; // Move past this Asset
+    }
+
+    return assets; // Return array of matching assets
+}
 
 function processCategories(oProduct) {
 	var aCategories = oProduct.getCategories();
@@ -27,7 +56,7 @@ function processCategories(oProduct) {
 	for (var i = 0; i < aCategories.length; i++) {
 //		print("  " + aCategories[i]);
 		if (aCategories[i] == "/Default/Figures/People") {
-			print("Product: " + oProduct.getContainerName() + "[" +oProduct.token +  "]" + " has category: " + aCategories[i]);
+//			print("Product: " + oProduct.getContainerName() + "[" +oProduct.token +  "]" + " has category: " + aCategories[i]);
 			return true;
 		}
 	}
@@ -46,62 +75,90 @@ function processContainer(oContainer, oAssetMgr) {
 		{
 			bIsHumanoidFigure = processCategories(oChildContainer);
 			var bIsInstalled = oChildContainer.isInstalled;
-			if (!bIsInstalled) {
-				processAssets(oChildContainer, oAssetMgr);
-				exit(0);
-			}
+			processProduct(oChildContainer, oAssetMgr);
 		}
 	}
 }
 
-function processAssets(oProduct, oAssetMgr) {
+function processAsset(oAsset, oAssetMgr) {
+	var categoryToFind = "/Default/Figures/People";
+	var compatibilityToFind = "/Genesis 9/Base";
+	var contentTypeToFind = "Actor/Character";
+
+	var spacer = "--";
+	if (oAsset.isInstalled) {
+		spacer = "++";
+	}
+	var aCompatibilities = oAsset.compatibilities;
+	var bIsCompatible = false;
+	for (var j = 0; j < aCompatibilities.length; j++) {
+		if (aCompatibilities[j] == compatibilityToFind) {
+			bIsCompatible = true;
+			break;
+		}
+	}
+	if (bIsCompatible && oAsset.contentType == contentTypeToFind) {
+		print(spacer + "[" + oAsset.productID + "] \"" + oAsset.productName + "\", " + oAsset.originalFilename + ", (" + oAsset.contentType + ")");
+	}
+
+}
+
+function processSearchContainer(oContainer, oAssetMgr) {
+
+	for (var i = 0; i < oContainer.getNumAssets(); i++) {
+		var oAsset = oContainer.getAsset(i);
+		processAsset(oAsset, oAssetMgr);
+	}
+
+}
+
+function processProduct(oProduct, oAssetMgr) {
 	var totalAssets = oProduct.getNumAssets();
 	if (totalAssets == 0) {
 		return totalAssets;
 	}
+
+	print("DEBUG: " + oProduct.getContainerName() + " has " + totalAssets + " assets");
+
 	var oAsset = oProduct.getAsset(0);
 	var nNonActorAssets = 0;
 	var sInstalled = "** NOT INSTALLED **";
 	if (oProduct.isInstalled) {
 		sInstalled = "__installed__";
-		return totalAssets;
+//		return totalAssets;
 	}
 	else {
-//		return totalAssets;
-		var nProductGuid = oProduct.guid;
-		oProduct = oAssetMgr.findProductByGuid( nProductGuid );
-		oProduct.update();
-		var result = oProduct.updateAssets();
-		if (!result)
-		{
-			print("ERROR: unable to update assets for: " + oProduct.getContainerName());
-			return totalAssets;
-		}
-		totalAssets = oProduct.getNumAssets();
+//		return totalAssets;		
 	}
 
-	print("==========================================================================");
-	print(sInstalled + " Assets in \"" + oProduct.getContainerName() + "\": [" + oProduct.token + "] (" + totalAssets + ")");
-	for (var i = 0; i < oProduct.getNumAssets(); i++) {
-		var oAsset = oProduct.getAsset(i);
-		var spacer = "--";
-		if (oAsset.isInstalled) {
-			spacer = "++";
-		}
-		if (oAsset.contentType == "Actor/Character") {
-			print(spacer + "[" + (i+1) + "/" + totalAssets + "] [" + oAsset.productID + "] \"" + oAsset.productName + "\", " + oAsset.originalFilename + ", (" + oAsset.contentType + ")");
-		}
-		else if (oAsset.originalFilename == "") {
-			print(spacer + "[" + (i+1) + "/" + totalAssets + "] empty asset...");
-			nNonActorAssets++;
-		}
-		else {
-			nNonActorAssets++;
-			print(spacer + "[" + (i+1) + "/" + totalAssets + "] non-actor: " + oAsset.originalFilename + ", (" + oAsset.contentType + ")");
+	if (!oProduct.isInstalled) {
+		var categoryToFind = "/Default/Figures/People";
+		var compatibilityToFind = "/Genesis 9/Base";
+		var contentTypeToFind = "Actor/Character";
+	
+		var xmlString = oProduct.getMetadataXML();
+		var xmlData = xmlString;
+//		print("DEBUG: xmlData = " + xmlData);
+		var matchingAssets = processXml(xmlData, categoryToFind, compatibilityToFind, contentTypeToFind);
+		for (var i = 0; i < matchingAssets.length; i++) {
+			var assetString = matchingAssets[i];
+			var assetValue = assetString.substring(assetString.indexOf("VALUE=\"") + "VALUE=\"".length);
+			assetValue = assetValue.substring(0, assetValue.indexOf("\""));
+			print("--[" + oProduct.token + "] \"" + oProduct.getContainerName() + "\", " + assetValue);
 		}
 	}
-	print(spacer + "Non-Actor Assets: total=" + nNonActorAssets);
-	print("");
+	else
+	{
+		for (var i = 0; i < totalAssets; i++) {
+			oAsset = oProduct.getAsset(i);
+			if (oAsset.contentType != "Actor/Character") {
+				nNonActorAssets++;
+				continue;
+			}
+			processAsset(oAsset, oAssetMgr);
+		}
+	
+	}
 
 	return totalAssets;
 }
@@ -120,24 +177,54 @@ function processAssets(oProduct, oAssetMgr) {
 		return;
 	}
 
-    oCategoryTop = oAssetMgr.getCategories();
-    print("Categories:");
-    for (var i = 0; i < oCategoryTop.getNumChildContainers(); i++) {
-        var oCategory = oCategoryTop.getChildContainer(i);
-//        print(oCategory.getContainerName() + ", children=" + oCategory.getNumChildContainers());
-//        printChildren(oCategory);
-    }
-//    return;
+	var nDefaultMaxResults = oAssetMgr.getMaxFileSearchResultSize();
+	oAssetMgr.setMaxFileSearchResultSize(10000);
 
-	// Get the top level asset container for products
-	var oProductsTop = oAssetMgr.getProducts();
+	var categoryToFind = "/Default/Figures/People";
+	var contentTypeToFind = "Actor/Character";
+
+	var aCategoriesFilter = Array();
+//	aCategoriesFilter.push(categoryToFind);
+
+	var aCompatibilitiesFilter = Array();
+	aCompatibilitiesFilter.push("/Genesis 9/Base");
+//	aCompatibilitiesFilter.push("/Genesis 8/Female");
+//	aCompatibilitiesFilter.push("/Genesis 8/Male");
+//	aCompatibilitiesFilter.push("/Genesis 8.1/Female");
+//	aCompatibilitiesFilter.push("/Genesis 8.1/Male");
+
+	var aContentTypesFilter = Array();
+	aContentTypesFilter.push(contentTypeToFind);
+
+	var oProductsTop = oAssetMgr.searchForProducts("", aCategoriesFilter, aCompatibilitiesFilter, aContentTypesFilter, 0x0, 0 );
+//	var oProductsTop = oAssetMgr.searchForAssets("", aCategoriesFilter, aCompatibilitiesFilter, aContentTypesFilter, 0 );
+//	var oProductsTop = oAssetMgr.getProducts();
+
+	oAssetMgr.setMaxFileSearchResultSize(nDefaultMaxResults);	
+
 	// If we do not have the products container
 	if( !oProductsTop ){
 		// We are done...
 		return;
 	}
 	
-    processContainer(oProductsTop, oAssetMgr);
+	while (oProductsTop.getState() == DzTopLevelAssetContainer.csBusy)
+	{
+		sleep(100);
+	}
+
+	if (oProductsTop.inherits("DzProductHolderContainer"))
+	{
+		print("num results = " + oProductsTop.getNumChildContainers());
+		processContainer(oProductsTop, oAssetMgr);
+	}
+	else if (oProductsTop.inherits("DzSearchContainer"))
+	{
+		print("num results = " + oProductsTop.getNumAssets());
+	    processSearchContainer(oProductsTop, oAssetMgr);
+	}
+
+	print("Script Completed.\n");
 
     return;
 

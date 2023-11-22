@@ -62,7 +62,7 @@ function main()
 		var compatibilityToFind = "/Genesis 9/Base";
 		var contentTypeToFind = "Actor/Character";
 
-		var matchingAssets = parseXML(xmlData, categoryToFind, compatibilityToFind);
+		var matchingAssets = parseXML(xmlData, categoryToFind, compatibilityToFind, contentTypeToFind);
 		// for each asset, extract Asset VALUE="" into string
 		for (var i = 0; i < matchingAssets.length; i++) {
 			var assetString = matchingAssets[i];
