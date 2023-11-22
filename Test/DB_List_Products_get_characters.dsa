@@ -1,3 +1,5 @@
+// DAZ Studio version 4.22.0.1 filetype DAZ Script
+
 /**********************************************************************
  
 	This script is provided as part of the Daz Script Documentation. The
@@ -15,54 +17,90 @@
 **********************************************************************/
 // Source: http://docs.daz3d.com/doku.php/public/software/dazstudio/4/referenceguide/scripting/api_reference/samples/metadata/list_products/start
 
-function processContainer(oContainer) {
-	for (var i = 0; i < oContainer.getNumChildContainers(); i++) {
-		var oChild = oContainer.getChildContainer(i);
-//            print( " [" + oChild.getPath() + "] " + oChild.getContainerName() + ", children=" + oChild.getNumChildContainers());
-		processContainer(oChild);
-		var sPath = oChild.getPath();
-		// print Assets if sPath contains "/Default/Figures/People"
-		if (sPath.indexOf("/Default/Figures/People") != -1) {
-			print( "## " + oChild.getPath() + " ##" );
-			printAssets(oChild);
-		}
 
+function processCategories(oProduct) {
+	var aCategories = oProduct.getCategories();
+	if (aCategories.length == 0) {
+		return false;
 	}
+//	print("Container [" + oContainer.getContainerName() + "] has categories:");
+	for (var i = 0; i < aCategories.length; i++) {
+//		print("  " + aCategories[i]);
+		if (aCategories[i] == "/Default/Figures/People") {
+//			print("Product: " + oProduct.getContainerName() + "[" +oProduct.token +  "]" + " has category: " + aCategories[i]);
+			return true;
+		}
+	}
+	return false;
 }
 
-function processContainer2(oContainer) {
+function processContainer(oContainer, oAssetMgr) {
 	for (var i = 0; i < oContainer.getNumChildContainers(); i++) {
 		var oChildContainer = oContainer.getChildContainer(i);
-		processContainer2(oChildContainer);
-		var aPath = oChildContainer.getIDPath();
-		var sPath = aPath.join("/");
-		var spacer = "  ";
+		processContainer(oChildContainer, oAssetMgr);
 		if (oChildContainer.getNumChildContainers() > 0) {
-			print( "Container: [" + oChildContainer.productID + "] " + oChildContainer.getContainerName() + ", sub_containers=" + oChildContainer.getNumChildContainers());
+			print( "Container: " + oChildContainer.getContainerName() + ", sub_containers=" + oChildContainer.getNumChildContainers());
 		}
-		processAssets(oChildContainer);
+		var bIsHumanoidFigure = false;
+		if (oChildContainer.inherits("DzProductAssetContainer"))
+		{
+			bIsHumanoidFigure = processCategories(oChildContainer);
+			var bIsInstalled = oChildContainer.isInstalled;
+			processAssets(oChildContainer, oAssetMgr);
+		}
 	}
 }
 
-function processAssets(oContainer) {
-	var totalAssets = oContainer.getNumAssets();
-	print("Assets in " + oContainer.getContainerName() + ": [" + oContainer.productID + "] (" + totalAssets + ")");
-	for (var i = 0; i < oContainer.getNumAssets(); i++) {
-		var oAsset = oContainer.getAsset(i);
+function processAssets(oProduct, oAssetMgr) {
+	var totalAssets = oProduct.getNumAssets();
+	if (totalAssets == 0) {
+		return totalAssets;
+	}
+	var oAsset = oProduct.getAsset(0);
+	var nNonActorAssets = 0;
+	var sInstalled = "** NOT INSTALLED **";
+	if (oProduct.isInstalled) {
+		sInstalled = "__installed__";
+		return totalAssets;
+	}
+	else {
+//		return totalAssets;
+		var nProductGuid = oProduct.guid;
+		oProduct = oAssetMgr.findProductByGuid( nProductGuid );
+		oProduct.update();
+		var result = oProduct.updateAssets();
+		if (!result)
+		{
+			print("ERROR: unable to update assets for: " + oProduct.getContainerName());
+			return totalAssets;
+		}
+		totalAssets = oProduct.getNumAssets();
+	}
+
+	print("==========================================================================");
+	print(sInstalled + " Assets in \"" + oProduct.getContainerName() + "\": [" + oProduct.token + "] (" + totalAssets + ")");
+	for (var i = 0; i < oProduct.getNumAssets(); i++) {
+		var oAsset = oProduct.getAsset(i);
 		var spacer = "--";
 		if (oAsset.isInstalled) {
 			spacer = "++";
 		}
 		if (oAsset.contentType == "Actor/Character") {
-			print(spacer + "[" + (i+1) + "/" + totalAssets + "] [" + oAsset.productID + "] " + oAsset.productName + ", " + oAsset.originalFilename + ", (" + oAsset.contentType + ")");
+			print(spacer + "[" + (i+1) + "/" + totalAssets + "] [" + oAsset.productID + "] \"" + oAsset.productName + "\", " + oAsset.originalFilename + ", (" + oAsset.contentType + ")");
 		}
 		else if (oAsset.originalFilename == "") {
-			print(spacer + "[" + (i+1) + "/" + totalAssets + "] skipping whitespace...");
+			print(spacer + "[" + (i+1) + "/" + totalAssets + "] empty asset...");
+			nNonActorAssets++;
 		}
 		else {
-//			print(spacer + "[" + (i+1) + "/" + totalAssets + "] Skipping non-actor: " + oAsset.originalFilename + ", (" + oAsset.contentType + ")");
+			nNonActorAssets++;
+			print(spacer + "[" + (i+1) + "/" + totalAssets + "] non-actor: " + oAsset.originalFilename + ", (" + oAsset.contentType + ")");
 		}
 	}
+	print(spacer + "Non-Actor Assets: total=" + nNonActorAssets);
+	print("");
+
+	return totalAssets;
 }
 
 
@@ -83,11 +121,9 @@ function processAssets(oContainer) {
     print("Categories:");
     for (var i = 0; i < oCategoryTop.getNumChildContainers(); i++) {
         var oCategory = oCategoryTop.getChildContainer(i);
-    //    print(oCategory.getContainerName() + ", children=" + oCategory.getNumChildContainers());
-    //    printChildren(oCategory);
+//        print(oCategory.getContainerName() + ", children=" + oCategory.getNumChildContainers());
+//        printChildren(oCategory);
     }
-
-
 //    return;
 
 	// Get the top level asset container for products
@@ -98,57 +134,9 @@ function processAssets(oContainer) {
 		return;
 	}
 	
-	// Define a variable for whether or not
-	// we only want installed products
-	var bInstalled = true;
-	
-	// Print the container name
-	print( bInstalled ? "Installed" : "All", oProductsTop.getContainerName(), ":" );
-
-    processContainer2(oProductsTop);
+    processContainer(oProductsTop, oAssetMgr);
 
     return;
-
-	// Declare working variables
-	var oIntermediate, oProduct;
-	var nProducts;
-	
-	// Get the number of intermediate containers; alpha-numeric sorting
-	var nIntermediates = oProductsTop.getNumChildContainers();
-	// Iterate over all intermediate containers
-	for( var i = 0; i < nIntermediates; i += 1 ){
-		// Get the 'current' intermediate container
-		oIntermediate = oProductsTop.getChildContainer( i );
-		// Print the container name
-		print( "+++++", oIntermediate.getContainerName(), "+++++" );
-
-		// Get the number of product containers within the intermediate
-		nProducts = oIntermediate.getNumChildContainers();
-		// Iterate over all product containers
-		for( var j = 0; j < nProducts; j += 1 ){
-			// Get the 'current' product container
-			oProduct = oIntermediate.getChildContainer( j );
-			// If we only care about installed products,
-			// and the 'current' one is not
-			if( bInstalled && !oProduct.isInstalled ){
-				// Next!!
-				continue;
-			}
-			
-			// Print information about the product
-			print(
-				oProduct.title
-				+ " ("
-					+ oProduct.store
-					+ ", "
-					+ oProduct.token
-					+ ", "
-					+ oProduct.guid
-					+ ", "
-					+ oProduct.id
-				+ ")" );
-		}		
-	}
 
 // Finalize the function and invoke
 })();
