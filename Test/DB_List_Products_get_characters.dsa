@@ -17,6 +17,9 @@
 **********************************************************************/
 // Source: http://docs.daz3d.com/doku.php/public/software/dazstudio/4/referenceguide/scripting/api_reference/samples/metadata/list_products/start
 
+var G_sScriptPath = new DzFileInfo(getScriptFileName()).path();
+var G_aOutputBuffer = Array();
+
 function processXml(xmlString, categorySearch, compatibilitySearch, contentTypeSearch) 
 {
     var assets = []; // Array to hold matching assets
@@ -35,7 +38,7 @@ function processXml(xmlString, categorySearch, compatibilitySearch, contentTypeS
         var contentTypeIndex = assetString.indexOf("<ContentType VALUE=\"" + contentTypeSearch );
 
         // If both Category and Compatibility are found within this Asset tag
-        if (categoryIndex !== -1 && compatibilityIndex !== -1) {
+        if (categoryIndex !== -1 && compatibilityIndex !== -1 && contentTypeIndex !== -1) {
 //        	print("I found it!");
 //        	print("\n\n" + assetString + "\n\n");
             assets.push(assetString); // Add the whole Asset string or just the specific VALUE
@@ -81,8 +84,8 @@ function processContainer(oContainer, oAssetMgr) {
 }
 
 function processAsset(oAsset, oAssetMgr) {
-	var categoryToFind = "/Default/Figures/People";
-	var compatibilityToFind = "/Genesis 9/Base";
+//	var categoryToFind = "/Default/Figures/People";
+//	var compatibilityToFind = "/Genesis 9/Base";
 	var contentTypeToFind = "Actor/Character";
 
 	var spacer = "--";
@@ -90,15 +93,21 @@ function processAsset(oAsset, oAssetMgr) {
 		spacer = "++";
 	}
 	var aCompatibilities = oAsset.compatibilities;
-	var bIsCompatible = false;
-	for (var j = 0; j < aCompatibilities.length; j++) {
-		if (aCompatibilities[j] == compatibilityToFind) {
-			bIsCompatible = true;
-			break;
-		}
-	}
+//	var bIsCompatible = false;
+//	for (var j = 0; j < aCompatibilities.length; j++) {
+//		if (aCompatibilities[j] == compatibilityToFind) {
+//			bIsCompatible = true;
+//			break;
+//		}
+//	}
+	var bIsCompatible = true;
 	if (bIsCompatible && oAsset.contentType == contentTypeToFind) {
 		print(spacer + "[" + oAsset.productID + "] \"" + oAsset.productName + "\", " + oAsset.originalFilename + ", (" + oAsset.contentType + ")");
+		//-------------------------------------------------------------------
+		var output_line = spacer + "," + oAsset.productID + "," + oAsset.productName + "," + oAsset.originalPath + "/" + oAsset.originalFilename;
+		G_aOutputBuffer.push(output_line);
+		//-------------------------------------------------------------------
+
 	}
 
 }
@@ -132,9 +141,12 @@ function processProduct(oProduct, oAssetMgr) {
 	}
 
 	if (!oProduct.isInstalled) {
-		var categoryToFind = "/Default/Figures/People";
-		var compatibilityToFind = "/Genesis 9/Base";
+//		var categoryToFind = "/Default/Figures/People";
+		var categoryToFind = "";
+//		var compatibilityToFind = "/Genesis 9/Base";
+		var compatibilityToFind = "";
 		var contentTypeToFind = "Actor/Character";
+//		var contentTypeToFind = "";
 	
 		var xmlString = oProduct.getMetadataXML();
 		var xmlData = xmlString;
@@ -145,6 +157,10 @@ function processProduct(oProduct, oAssetMgr) {
 			var assetValue = assetString.substring(assetString.indexOf("VALUE=\"") + "VALUE=\"".length);
 			assetValue = assetValue.substring(0, assetValue.indexOf("\""));
 			print("--[" + oProduct.token + "] \"" + oProduct.getContainerName() + "\", " + assetValue);
+			//-------------------------------------------------------------------
+			var output_line = "--," + oProduct.token +  "," + oProduct.getContainerName() + "," + assetValue;
+			G_aOutputBuffer.push(output_line);
+			//-------------------------------------------------------------------
 		}
 	}
 	else
@@ -188,10 +204,10 @@ function processProduct(oProduct, oAssetMgr) {
 
 	var aCompatibilitiesFilter = Array();
 	aCompatibilitiesFilter.push("/Genesis 9/Base");
-//	aCompatibilitiesFilter.push("/Genesis 8/Female");
-//	aCompatibilitiesFilter.push("/Genesis 8/Male");
-//	aCompatibilitiesFilter.push("/Genesis 8.1/Female");
-//	aCompatibilitiesFilter.push("/Genesis 8.1/Male");
+	aCompatibilitiesFilter.push("/Genesis 8/Female");
+	aCompatibilitiesFilter.push("/Genesis 8/Male");
+	aCompatibilitiesFilter.push("/Genesis 8.1/Female");
+	aCompatibilitiesFilter.push("/Genesis 8.1/Male");
 
 	var aContentTypesFilter = Array();
 	aContentTypesFilter.push(contentTypeToFind);
@@ -223,6 +239,14 @@ function processProduct(oProduct, oAssetMgr) {
 		print("num results = " + oProductsTop.getNumAssets());
 	    processSearchContainer(oProductsTop, oAssetMgr);
 	}
+
+	var oFile = DzFile(G_sScriptPath + "/output.jobs");
+	oFile.open(DzFile.WriteOnly);
+	for (var i=0; i < G_aOutputBuffer.length; i++)
+	{
+		oFile.write(G_aOutputBuffer[i] + "\n");
+	}
+	oFile.close();
 
 	print("Script Completed.\n");
 
