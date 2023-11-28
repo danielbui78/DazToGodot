@@ -66,10 +66,10 @@ function processCategories(oProduct) {
 	return false;
 }
 
-function processContainer(oContainer, oAssetMgr) {
+function processContainer(oContainer, oAssetMgr, oCompatibilitiesFilter) {
 	for (var i = 0; i < oContainer.getNumChildContainers(); i++) {
 		var oChildContainer = oContainer.getChildContainer(i);
-		processContainer(oChildContainer, oAssetMgr);
+		processContainer(oChildContainer, oAssetMgr, oCompatibilitiesFilter);
 		if (oChildContainer.getNumChildContainers() > 0) {
 			print( "Container: " + oChildContainer.getContainerName() + ", sub_containers=" + oChildContainer.getNumChildContainers());
 		}
@@ -78,7 +78,7 @@ function processContainer(oContainer, oAssetMgr) {
 		{
 			bIsHumanoidFigure = processCategories(oChildContainer);
 			var bIsInstalled = oChildContainer.isInstalled;
-			processProduct(oChildContainer, oAssetMgr);
+			processProduct(oChildContainer, oAssetMgr, oCompatibilitiesFilter);
 		}
 	}
 }
@@ -121,7 +121,7 @@ function processSearchContainer(oContainer, oAssetMgr) {
 
 }
 
-function processProduct(oProduct, oAssetMgr) {
+function processProduct(oProduct, oAssetMgr, oCompatibilitiesFilter) {
 	var totalAssets = oProduct.getNumAssets();
 	if (totalAssets == 0) {
 		return totalAssets;
@@ -140,40 +140,46 @@ function processProduct(oProduct, oAssetMgr) {
 //		return totalAssets;		
 	}
 
-	if (!oProduct.isInstalled) {
-//		var categoryToFind = "/Default/Figures/People";
-		var categoryToFind = "";
-//		var compatibilityToFind = "/Genesis 9/Base";
-		var compatibilityToFind = "";
-		var contentTypeToFind = "Actor/Character";
-//		var contentTypeToFind = "";
-	
-		var xmlString = oProduct.getMetadataXML();
-		var xmlData = xmlString;
-//		print("DEBUG: xmlData = " + xmlData);
-		var matchingAssets = processXml(xmlData, categoryToFind, compatibilityToFind, contentTypeToFind);
-		for (var i = 0; i < matchingAssets.length; i++) {
-			var assetString = matchingAssets[i];
-			var assetValue = assetString.substring(assetString.indexOf("VALUE=\"") + "VALUE=\"".length);
-			assetValue = assetValue.substring(0, assetValue.indexOf("\""));
-			print("--[" + oProduct.token + "] \"" + oProduct.getContainerName() + "\", " + assetValue);
-			//-------------------------------------------------------------------
-			var output_line = "--," + oProduct.token +  "," + oProduct.getContainerName() + "," + assetValue;
-			G_aOutputBuffer.push(output_line);
-			//-------------------------------------------------------------------
-		}
-	}
-	else
+	for (var index_compatibilities = 0; index_compatibilities < oCompatibilitiesFilter.length; index_compatibilities++) 
 	{
-		for (var i = 0; i < totalAssets; i++) {
-			oAsset = oProduct.getAsset(i);
-			if (oAsset.contentType != "Actor/Character") {
-				nNonActorAssets++;
-				continue;
-			}
-			processAsset(oAsset, oAssetMgr);
+		var compatibilityToFind = oCompatibilitiesFilter[index_compatibilities];
+		var categoryToFind = "";
+		var contentTypeToFind = "Actor/Character";
+
+		if (!oProduct.isInstalled) 
+		{		
+				var xmlString = oProduct.getMetadataXML();
+				var xmlData = xmlString;
+
+				var matchingAssets = processXml(xmlData, categoryToFind, compatibilityToFind, contentTypeToFind);
+				for (var i = 0; i < matchingAssets.length; i++) 
+				{
+					var assetString = matchingAssets[i];
+					var assetValue = assetString.substring(assetString.indexOf("VALUE=\"") + "VALUE=\"".length);
+					assetValue = assetValue.substring(0, assetValue.indexOf("\""));
+					print("--[" + oProduct.token + "] \"" + oProduct.getContainerName() + "\", " + assetValue);
+					//-------------------------------------------------------------------
+					var output_line = "--," + oProduct.token +  "," + oProduct.getContainerName() + "," + assetValue;
+					G_aOutputBuffer.push(output_line);
+					//-------------------------------------------------------------------
+				}
 		}
-	
+		else
+		{
+			for (var i = 0; i < totalAssets; i++) 
+			{
+				oAsset = oProduct.getAsset(i);
+				if (compatibilityToFind != "" && oAsset.compatibilities != compatibilityToFind) {
+					continue;
+				}
+				if (contentTypeToFind != "" && oAsset.contentType != contentTypeToFind) {
+					nNonActorAssets++;
+					continue;
+				}
+				processAsset(oAsset, oAssetMgr);
+			}
+		
+		}
 	}
 
 	return totalAssets;
@@ -193,6 +199,62 @@ function processProduct(oProduct, oAssetMgr) {
 		return;
 	}
 
+	var nDefaultMaxResults = oAssetMgr.getMaxFileSearchResultSize();
+	oAssetMgr.setMaxFileSearchResultSize(10000);
+
+	var categoryToFind = "/Default/Figures/People";
+	var contentTypeToFind = "Actor/Character";
+
+	var aCategoriesFilter = Array();
+//	aCategoriesFilter.push(categoryToFind);
+
+	var aCompatibilitiesFilter = Array();
+	aCompatibilitiesFilter.push("/Genesis 9/Base");
+	aCompatibilitiesFilter.push("/Genesis 8/Female");
+	aCompatibilitiesFilter.push("/Genesis 8/Male");
+	aCompatibilitiesFilter.push("/Genesis 8.1/Female");
+	aCompatibilitiesFilter.push("/Genesis 8.1/Male");
+
+	var aContentTypesFilter = Array();
+	aContentTypesFilter.push(contentTypeToFind);
+
+	var oProductsTop = oAssetMgr.searchForProducts("", aCategoriesFilter, aCompatibilitiesFilter, aContentTypesFilter, 0x0, 0 );
+	oAssetMgr.setMaxFileSearchResultSize(nDefaultMaxResults);	
+
+	// If we do not have the products container
+	if( !oProductsTop ){
+		// We are done...
+		return;
+	}
+	
+	while (oProductsTop.getState() == DzTopLevelAssetContainer.csBusy)
+	{
+		sleep(100);
+	}
+
+	if (oProductsTop.inherits("DzProductHolderContainer"))
+	{
+		print("num results = " + oProductsTop.getNumChildContainers());
+		processContainer(oProductsTop, oAssetMgr, aCompatibilitiesFilter);
+	}
+
+	var oFile = DzFile(G_sScriptPath + "/output.jobs");
+	oFile.open(DzFile.WriteOnly);
+	for (var i=0; i < G_aOutputBuffer.length; i++)
+	{
+		oFile.write(G_aOutputBuffer[i] + "\n");
+	}
+	oFile.close();
+
+	print("Script Completed.\n");
+
+    return;
+
+// Finalize the function and invoke
+})();
+
+function unused_main()
+{
 	var nDefaultMaxResults = oAssetMgr.getMaxFileSearchResultSize();
 	oAssetMgr.setMaxFileSearchResultSize(10000);
 
@@ -248,9 +310,5 @@ function processProduct(oProduct, oAssetMgr) {
 	}
 	oFile.close();
 
-	print("Script Completed.\n");
-
-    return;
-
-// Finalize the function and invoke
-})();
+	print("Script Completed.\n");	
+}
