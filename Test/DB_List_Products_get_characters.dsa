@@ -39,8 +39,6 @@ function processXml(xmlString, categorySearch, compatibilitySearch, contentTypeS
 
         // If both Category and Compatibility are found within this Asset tag
         if (categoryIndex !== -1 && compatibilityIndex !== -1 && contentTypeIndex !== -1) {
-//        	print("I found it!");
-//        	print("\n\n" + assetString + "\n\n");
             assets.push(assetString); // Add the whole Asset string or just the specific VALUE
         }
 
@@ -50,42 +48,22 @@ function processXml(xmlString, categorySearch, compatibilitySearch, contentTypeS
     return assets; // Return array of matching assets
 }
 
-function processCategories(oProduct) {
-	var aCategories = oProduct.getCategories();
-	if (aCategories.length == 0) {
-		return false;
-	}
-//	print("Container [" + oContainer.getContainerName() + "] has categories:");
-	for (var i = 0; i < aCategories.length; i++) {
-//		print("  " + aCategories[i]);
-		if (aCategories[i] == "/Default/Figures/People") {
-//			print("Product: " + oProduct.getContainerName() + "[" +oProduct.token +  "]" + " has category: " + aCategories[i]);
-			return true;
-		}
-	}
-	return false;
-}
-
-function processContainer(oContainer, oAssetMgr, oCompatibilitiesFilter) {
+function processContainer(oContainer, oAssetMgr, aCompatibilitiesFilter) {
 	for (var i = 0; i < oContainer.getNumChildContainers(); i++) {
 		var oChildContainer = oContainer.getChildContainer(i);
-		processContainer(oChildContainer, oAssetMgr, oCompatibilitiesFilter);
+		processContainer(oChildContainer, oAssetMgr, aCompatibilitiesFilter);
 		if (oChildContainer.getNumChildContainers() > 0) {
 			print( "Container: " + oChildContainer.getContainerName() + ", sub_containers=" + oChildContainer.getNumChildContainers());
 		}
-		var bIsHumanoidFigure = false;
 		if (oChildContainer.inherits("DzProductAssetContainer"))
 		{
-			bIsHumanoidFigure = processCategories(oChildContainer);
-			var bIsInstalled = oChildContainer.isInstalled;
-			processProduct(oChildContainer, oAssetMgr, oCompatibilitiesFilter);
+			processProduct(oChildContainer, oAssetMgr, aCompatibilitiesFilter);
 		}
 	}
 }
 
-function processAsset(oAsset, oAssetMgr) {
+function processAsset(oAsset, oAssetMgr, aCompatibilitiesFilter) {
 //	var categoryToFind = "/Default/Figures/People";
-//	var compatibilityToFind = "/Genesis 9/Base";
 	var contentTypeToFind = "Actor/Character";
 
 	var spacer = "--";
@@ -93,18 +71,19 @@ function processAsset(oAsset, oAssetMgr) {
 		spacer = "++";
 	}
 	var aCompatibilities = oAsset.compatibilities;
-//	var bIsCompatible = false;
-//	for (var j = 0; j < aCompatibilities.length; j++) {
-//		if (aCompatibilities[j] == compatibilityToFind) {
-//			bIsCompatible = true;
-//			break;
-//		}
-//	}
-	var bIsCompatible = true;
+	var bIsCompatible = false;
+	for (var i = 0; i < aCompatibilitiesFilter.length; i++) {
+		for (var j = 0; j < aCompatibilities.length; j++) {
+			if (aCompatibilitiesFilter[i] == aCompatibilities[j]) {
+				bIsCompatible = true;
+				break;
+			}
+		}
+	}
 	if (bIsCompatible && oAsset.contentType == contentTypeToFind) {
 		print(spacer + "[" + oAsset.productID + "] \"" + oAsset.productName + "\", " + oAsset.originalFilename + ", (" + oAsset.contentType + ")");
 		//-------------------------------------------------------------------
-		var output_line = spacer + "," + oAsset.productID + "," + oAsset.productName + "," + oAsset.originalPath + "/" + oAsset.originalFilename;
+		var output_line = spacer + "," + oAsset.productID + ",\"" + oAsset.productName + "\"," + oAsset.originalPath + "/" + oAsset.originalFilename;
 		G_aOutputBuffer.push(output_line);
 		//-------------------------------------------------------------------
 
@@ -112,16 +91,7 @@ function processAsset(oAsset, oAssetMgr) {
 
 }
 
-function processSearchContainer(oContainer, oAssetMgr) {
-
-	for (var i = 0; i < oContainer.getNumAssets(); i++) {
-		var oAsset = oContainer.getAsset(i);
-		processAsset(oAsset, oAssetMgr);
-	}
-
-}
-
-function processProduct(oProduct, oAssetMgr, oCompatibilitiesFilter) {
+function processProduct(oProduct, oAssetMgr, aCompatibilitiesFilter) {
 	var totalAssets = oProduct.getNumAssets();
 	if (totalAssets == 0) {
 		return totalAssets;
@@ -129,57 +99,35 @@ function processProduct(oProduct, oAssetMgr, oCompatibilitiesFilter) {
 
 	print("DEBUG: " + oProduct.getContainerName() + " has " + totalAssets + " assets");
 
-	var oAsset = oProduct.getAsset(0);
-	var nNonActorAssets = 0;
-	var sInstalled = "** NOT INSTALLED **";
-	if (oProduct.isInstalled) {
-		sInstalled = "__installed__";
-//		return totalAssets;
-	}
-	else {
-//		return totalAssets;		
-	}
-
-	for (var index_compatibilities = 0; index_compatibilities < oCompatibilitiesFilter.length; index_compatibilities++) 
-	{
-		var compatibilityToFind = oCompatibilitiesFilter[index_compatibilities];
-		var categoryToFind = "";
-		var contentTypeToFind = "Actor/Character";
-
-		if (!oProduct.isInstalled) 
-		{		
-				var xmlString = oProduct.getMetadataXML();
-				var xmlData = xmlString;
-
-				var matchingAssets = processXml(xmlData, categoryToFind, compatibilityToFind, contentTypeToFind);
-				for (var i = 0; i < matchingAssets.length; i++) 
-				{
-					var assetString = matchingAssets[i];
-					var assetValue = assetString.substring(assetString.indexOf("VALUE=\"") + "VALUE=\"".length);
-					assetValue = assetValue.substring(0, assetValue.indexOf("\""));
-					print("--[" + oProduct.token + "] \"" + oProduct.getContainerName() + "\", " + assetValue);
-					//-------------------------------------------------------------------
-					var output_line = "--," + oProduct.token +  "," + oProduct.getContainerName() + "," + assetValue;
-					G_aOutputBuffer.push(output_line);
-					//-------------------------------------------------------------------
-				}
-		}
-		else
+	if (!oProduct.isInstalled) 
+	{		
+		for (var index_compatibilities = 0; index_compatibilities < aCompatibilitiesFilter.length; index_compatibilities++) 
 		{
-			for (var i = 0; i < totalAssets; i++) 
+			var compatibilityToFind = aCompatibilitiesFilter[index_compatibilities];
+			var categoryToFind = "";
+			var contentTypeToFind = "Actor/Character";
+	
+			var xmlData = oProduct.getMetadataXML();
+			var matchingAssets = processXml(xmlData, categoryToFind, compatibilityToFind, contentTypeToFind);
+			for (var i = 0; i < matchingAssets.length; i++) 
 			{
-				oAsset = oProduct.getAsset(i);
-				if (compatibilityToFind != "" && oAsset.compatibilities != compatibilityToFind) {
-					continue;
-				}
-				if (contentTypeToFind != "" && oAsset.contentType != contentTypeToFind) {
-					nNonActorAssets++;
-					continue;
-				}
-				processAsset(oAsset, oAssetMgr);
+				var assetString = matchingAssets[i];
+				var assetValue = assetString.substring(assetString.indexOf("VALUE=\"") + "VALUE=\"".length);
+				assetValue = assetValue.substring(0, assetValue.indexOf("\""));
+				print("--[" + oProduct.token + "] \"" + oProduct.getContainerName() + "\", " + assetValue);
+				//-------------------------------------------------------------------
+				var output_line = "--," + oProduct.token +  ",\"" + oProduct.getContainerName() + "\"," + assetValue;
+				G_aOutputBuffer.push(output_line);
+				//-------------------------------------------------------------------
 			}
-		
 		}
+	}
+	else
+	{
+		for (var i = 0; i < totalAssets; i++) {
+			var oAsset = oProduct.getAsset(i);
+			processAsset(oAsset, oAssetMgr, aCompatibilitiesFilter);
+		}	
 	}
 
 	return totalAssets;
@@ -203,10 +151,12 @@ function processProduct(oProduct, oAssetMgr, oCompatibilitiesFilter) {
 	oAssetMgr.setMaxFileSearchResultSize(10000);
 
 	var categoryToFind = "/Default/Figures/People";
-	var contentTypeToFind = "Actor/Character";
-
 	var aCategoriesFilter = Array();
 //	aCategoriesFilter.push(categoryToFind);
+
+	var contentTypeToFind = "Actor/Character";
+	var aContentTypesFilter = Array();
+	aContentTypesFilter.push(contentTypeToFind);
 
 	var aCompatibilitiesFilter = Array();
 	aCompatibilitiesFilter.push("/Genesis 9/Base");
@@ -214,9 +164,6 @@ function processProduct(oProduct, oAssetMgr, oCompatibilitiesFilter) {
 	aCompatibilitiesFilter.push("/Genesis 8/Male");
 	aCompatibilitiesFilter.push("/Genesis 8.1/Female");
 	aCompatibilitiesFilter.push("/Genesis 8.1/Male");
-
-	var aContentTypesFilter = Array();
-	aContentTypesFilter.push(contentTypeToFind);
 
 	var oProductsTop = oAssetMgr.searchForProducts("", aCategoriesFilter, aCompatibilitiesFilter, aContentTypesFilter, 0x0, 0 );
 	oAssetMgr.setMaxFileSearchResultSize(nDefaultMaxResults);	
@@ -234,11 +181,11 @@ function processProduct(oProduct, oAssetMgr, oCompatibilitiesFilter) {
 
 	if (oProductsTop.inherits("DzProductHolderContainer"))
 	{
-		print("num results = " + oProductsTop.getNumChildContainers());
+		print("num products = " + oProductsTop.getNumChildContainers());
 		processContainer(oProductsTop, oAssetMgr, aCompatibilitiesFilter);
 	}
 
-	var oFile = DzFile(G_sScriptPath + "/output.jobs");
+	var oFile = DzFile(G_sScriptPath + "/output.jobs.csv");
 	oFile.open(DzFile.WriteOnly);
 	for (var i=0; i < G_aOutputBuffer.length; i++)
 	{
@@ -252,63 +199,3 @@ function processProduct(oProduct, oAssetMgr, oCompatibilitiesFilter) {
 
 // Finalize the function and invoke
 })();
-
-function unused_main()
-{
-	var nDefaultMaxResults = oAssetMgr.getMaxFileSearchResultSize();
-	oAssetMgr.setMaxFileSearchResultSize(10000);
-
-	var categoryToFind = "/Default/Figures/People";
-	var contentTypeToFind = "Actor/Character";
-
-	var aCategoriesFilter = Array();
-//	aCategoriesFilter.push(categoryToFind);
-
-	var aCompatibilitiesFilter = Array();
-	aCompatibilitiesFilter.push("/Genesis 9/Base");
-	aCompatibilitiesFilter.push("/Genesis 8/Female");
-	aCompatibilitiesFilter.push("/Genesis 8/Male");
-	aCompatibilitiesFilter.push("/Genesis 8.1/Female");
-	aCompatibilitiesFilter.push("/Genesis 8.1/Male");
-
-	var aContentTypesFilter = Array();
-	aContentTypesFilter.push(contentTypeToFind);
-
-	var oProductsTop = oAssetMgr.searchForProducts("", aCategoriesFilter, aCompatibilitiesFilter, aContentTypesFilter, 0x0, 0 );
-//	var oProductsTop = oAssetMgr.searchForAssets("", aCategoriesFilter, aCompatibilitiesFilter, aContentTypesFilter, 0 );
-//	var oProductsTop = oAssetMgr.getProducts();
-
-	oAssetMgr.setMaxFileSearchResultSize(nDefaultMaxResults);	
-
-	// If we do not have the products container
-	if( !oProductsTop ){
-		// We are done...
-		return;
-	}
-	
-	while (oProductsTop.getState() == DzTopLevelAssetContainer.csBusy)
-	{
-		sleep(100);
-	}
-
-	if (oProductsTop.inherits("DzProductHolderContainer"))
-	{
-		print("num results = " + oProductsTop.getNumChildContainers());
-		processContainer(oProductsTop, oAssetMgr);
-	}
-	else if (oProductsTop.inherits("DzSearchContainer"))
-	{
-		print("num results = " + oProductsTop.getNumAssets());
-	    processSearchContainer(oProductsTop, oAssetMgr);
-	}
-
-	var oFile = DzFile(G_sScriptPath + "/output.jobs");
-	oFile.open(DzFile.WriteOnly);
-	for (var i=0; i < G_aOutputBuffer.length; i++)
-	{
-		oFile.write(G_aOutputBuffer[i] + "\n");
-	}
-	oFile.close();
-
-	print("Script Completed.\n");	
-}
