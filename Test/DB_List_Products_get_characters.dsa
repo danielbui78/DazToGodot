@@ -103,6 +103,10 @@ function processProduct(oProduct, oAssetMgr, aCompatibilitiesFilter, aArtistsFil
 
 	print("DEBUG: " + oProduct.getContainerName() + " has " + totalAssets + " assets");
 
+	if (aArtistsFilter.length == 0) {
+		aArtistsFilter.push("");
+	}
+
 	// filter assets with artist filter
 	bHasMatchingArtist = false;
 	for (var index_artist = 0; index_artist < aArtistsFilter.length; index_artist++)
@@ -198,7 +202,7 @@ function processContainer(oContainer, oAssetMgr, aCompatibilitiesFilter, aArtist
 	aCompatibilitiesFilter.push("/Genesis 8.1/Male");
 
 	var aArtistsFilter = Array();
-	aArtistsFilter.push("Daz Original");
+//	aArtistsFilter.push("Daz Original");
 
 	var nMaxResults = 1000;
 //	var nDefaultMaxResults = oAssetMgr.getMaxFileSearchResultSize();
