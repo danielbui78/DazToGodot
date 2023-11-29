@@ -19,8 +19,12 @@
 
 var G_sScriptPath = new DzFileInfo(getScriptFileName()).path();
 var G_aOutputBuffer = Array();
+//var categoryToFind = "/Default/Figures/People";
+var categoryToFind = "";
+var contentTypeToFind = "Actor/Character";
 
-function processXml(xmlString, categorySearch, compatibilitySearch, contentTypeSearch) 
+// Parse XML String and return array of asset filenames that match the search criteria
+function processXml(xmlString, categorySearch, compatibilitySearch, contentTypeSearch, artistSearch) 
 {
     var assets = []; // Array to hold matching assets
     var pos = 0; // Variable to track position in the string
@@ -33,9 +37,22 @@ function processXml(xmlString, categorySearch, compatibilitySearch, contentTypeS
         var assetString = xmlString.substring(assetIndex, assetEndIndex);
 
         // Search for Category within this Asset
-        var categoryIndex = assetString.indexOf("<Category VALUE=\"" + categorySearch );
-        var compatibilityIndex = assetString.indexOf("<Compatibility VALUE=\"" + compatibilitySearch );
-        var contentTypeIndex = assetString.indexOf("<ContentType VALUE=\"" + contentTypeSearch );
+        var categoryIndex = 0;
+		if (categorySearch != "") {
+			categoryIndex = assetString.indexOf("<Category VALUE=\"" + categorySearch );
+		}
+		var contentTypeIndex = 0;
+		if (contentTypeSearch != "") {
+			contentTypeIndex = assetString.indexOf("<ContentType VALUE=\"" + contentTypeSearch );
+		}
+		var compatibilityIndex = 0;
+		if (compatibilitySearch != "") {
+	        compatibilityIndex = assetString.indexOf("<Compatibility VALUE=\"" + compatibilitySearch );
+		}
+		var artistIndex = 0;
+		if (artistSearch != "") {
+			artistIndex = assetString.indexOf("<Artist VALUE=\"" + artistSearch );
+		}
 
         // If both Category and Compatibility are found within this Asset tag
         if (categoryIndex !== -1 && compatibilityIndex !== -1 && contentTypeIndex !== -1) {
@@ -48,23 +65,8 @@ function processXml(xmlString, categorySearch, compatibilitySearch, contentTypeS
     return assets; // Return array of matching assets
 }
 
-function processContainer(oContainer, oAssetMgr, aCompatibilitiesFilter) {
-	for (var i = 0; i < oContainer.getNumChildContainers(); i++) {
-		var oChildContainer = oContainer.getChildContainer(i);
-		processContainer(oChildContainer, oAssetMgr, aCompatibilitiesFilter);
-		if (oChildContainer.getNumChildContainers() > 0) {
-			print( "Container: " + oChildContainer.getContainerName() + ", sub_containers=" + oChildContainer.getNumChildContainers());
-		}
-		if (oChildContainer.inherits("DzProductAssetContainer"))
-		{
-			processProduct(oChildContainer, oAssetMgr, aCompatibilitiesFilter);
-		}
-	}
-}
-
+// Process an asset and add to the output buffer if it matches the search criteria
 function processAsset(oAsset, oAssetMgr, aCompatibilitiesFilter) {
-//	var categoryToFind = "/Default/Figures/People";
-	var contentTypeToFind = "Actor/Character";
 
 	var spacer = "--";
 	if (oAsset.isInstalled) {
@@ -82,8 +84,9 @@ function processAsset(oAsset, oAssetMgr, aCompatibilitiesFilter) {
 	}
 	if (bIsCompatible && oAsset.contentType == contentTypeToFind) {
 		print(spacer + "[" + oAsset.productID + "] \"" + oAsset.productName + "\", " + oAsset.originalFilename + ", (" + oAsset.contentType + ")");
+		var assetValue = oAsset.originalPath + "/" + oAsset.originalFilename;
 		//-------------------------------------------------------------------
-		var output_line = spacer + "," + oAsset.productID + ",\"" + oAsset.productName + "\"," + oAsset.originalPath + "/" + oAsset.originalFilename;
+		var output_line = spacer + "," + oAsset.productID + ",\"" + oAsset.productName + "\"," + assetValue;
 		G_aOutputBuffer.push(output_line);
 		//-------------------------------------------------------------------
 
@@ -91,7 +94,8 @@ function processAsset(oAsset, oAssetMgr, aCompatibilitiesFilter) {
 
 }
 
-function processProduct(oProduct, oAssetMgr, aCompatibilitiesFilter) {
+// Process a product, if not installed then use metadata, otherwise iterate through assets
+function processProduct(oProduct, oAssetMgr, aCompatibilitiesFilter, aArtistsFilter) {
 	var totalAssets = oProduct.getNumAssets();
 	if (totalAssets == 0) {
 		return totalAssets;
@@ -99,27 +103,46 @@ function processProduct(oProduct, oAssetMgr, aCompatibilitiesFilter) {
 
 	print("DEBUG: " + oProduct.getContainerName() + " has " + totalAssets + " assets");
 
-	if (!oProduct.isInstalled) 
-	{		
-		for (var index_compatibilities = 0; index_compatibilities < aCompatibilitiesFilter.length; index_compatibilities++) 
-		{
-			var compatibilityToFind = aCompatibilitiesFilter[index_compatibilities];
-			var categoryToFind = "";
-			var contentTypeToFind = "Actor/Character";
-	
-			var xmlData = oProduct.getMetadataXML();
-			var matchingAssets = processXml(xmlData, categoryToFind, compatibilityToFind, contentTypeToFind);
-			for (var i = 0; i < matchingAssets.length; i++) 
-			{
-				var assetString = matchingAssets[i];
-				var assetValue = assetString.substring(assetString.indexOf("VALUE=\"") + "VALUE=\"".length);
-				assetValue = assetValue.substring(0, assetValue.indexOf("\""));
-				print("--[" + oProduct.token + "] \"" + oProduct.getContainerName() + "\", " + assetValue);
-				//-------------------------------------------------------------------
-				var output_line = "--," + oProduct.token +  ",\"" + oProduct.getContainerName() + "\"," + assetValue;
-				G_aOutputBuffer.push(output_line);
-				//-------------------------------------------------------------------
+	// filter assets with artist filter
+	bHasMatchingArtist = false;
+	for (var index_artist = 0; index_artist < aArtistsFilter.length; index_artist++)
+	{
+		var artistToFind = aArtistsFilter[index_artist];
+		for (var i = 0; i < oProduct.artistNames.length; i++) {
+			if (oProduct.artistNames[i].indexOf(artistToFind) > -1) {
+				bHasMatchingArtist = true;
+				break;
 			}
+		}
+	}
+	if (!bHasMatchingArtist) {
+		print("DEBUG: " + oProduct.getContainerName() + " does not have matching artist");
+		return totalAssets;
+	}
+
+	if (!oProduct.isInstalled) 
+	{
+		for (var index_artists = 0; index_artists < aArtistsFilter.length; index_artists++)
+		{
+			var artistToFind = aArtistsFilter[index_artists];
+			for (var index_compatibilities = 0; index_compatibilities < aCompatibilitiesFilter.length; index_compatibilities++) 
+			{
+				var compatibilityToFind = aCompatibilitiesFilter[index_compatibilities];
+		
+				var xmlData = oProduct.getMetadataXML();
+				var matchingAssets = processXml(xmlData, categoryToFind, compatibilityToFind, contentTypeToFind, "");
+				for (var i = 0; i < matchingAssets.length; i++) 
+				{
+					var assetString = matchingAssets[i];
+					var assetValue = assetString.substring(assetString.indexOf("VALUE=\"") + "VALUE=\"".length);
+					assetValue = assetValue.substring(0, assetValue.indexOf("\""));
+					print("--[" + oProduct.token + "] \"" + oProduct.getContainerName() + "\", " + assetValue);
+					//-------------------------------------------------------------------
+					var output_line = "--," + oProduct.token +  ",\"" + oProduct.getContainerName() + "\"," + assetValue;
+					G_aOutputBuffer.push(output_line);
+					//-------------------------------------------------------------------
+				}
+			}	
 		}
 	}
 	else
@@ -133,6 +156,20 @@ function processProduct(oProduct, oAssetMgr, aCompatibilitiesFilter) {
 	return totalAssets;
 }
 
+// Process a container containing products
+function processContainer(oContainer, oAssetMgr, aCompatibilitiesFilter, aArtistsFilter) {
+	for (var i = 0; i < oContainer.getNumChildContainers(); i++) {
+		var oChildContainer = oContainer.getChildContainer(i);
+		processContainer(oChildContainer, oAssetMgr, aCompatibilitiesFilter, aArtistsFilter);
+		if (oChildContainer.getNumChildContainers() > 0) {
+			print( "Container: " + oChildContainer.getContainerName() + ", sub_containers=" + oChildContainer.getNumChildContainers());
+		}
+		if (oChildContainer.inherits("DzProductAssetContainer"))
+		{
+			processProduct(oChildContainer, oAssetMgr, aCompatibilitiesFilter, aArtistsFilter);
+		}
+	}
+}
 
 // Define an anonymous function;
 // serves as our main loop,
@@ -147,26 +184,27 @@ function processProduct(oProduct, oAssetMgr, aCompatibilitiesFilter) {
 		return;
 	}
 
-	var nDefaultMaxResults = oAssetMgr.getMaxFileSearchResultSize();
-	oAssetMgr.setMaxFileSearchResultSize(10000);
-
-	var categoryToFind = "/Default/Figures/People";
 	var aCategoriesFilter = Array();
-//	aCategoriesFilter.push(categoryToFind);
+	aCategoriesFilter.push(categoryToFind);
 
-	var contentTypeToFind = "Actor/Character";
 	var aContentTypesFilter = Array();
 	aContentTypesFilter.push(contentTypeToFind);
 
 	var aCompatibilitiesFilter = Array();
-	aCompatibilitiesFilter.push("/Genesis 9/Base");
+//	aCompatibilitiesFilter.push("/Genesis 9/Base");
 	aCompatibilitiesFilter.push("/Genesis 8/Female");
 	aCompatibilitiesFilter.push("/Genesis 8/Male");
 	aCompatibilitiesFilter.push("/Genesis 8.1/Female");
 	aCompatibilitiesFilter.push("/Genesis 8.1/Male");
 
+	var aArtistsFilter = Array();
+	aArtistsFilter.push("Daz Original");
+
+	var nMaxResults = 1000;
+//	var nDefaultMaxResults = oAssetMgr.getMaxFileSearchResultSize();
+//	oAssetMgr.setMaxFileSearchResultSize(nMaxResults);
 	var oProductsTop = oAssetMgr.searchForProducts("", aCategoriesFilter, aCompatibilitiesFilter, aContentTypesFilter, 0x0, 0 );
-	oAssetMgr.setMaxFileSearchResultSize(nDefaultMaxResults);	
+//	oAssetMgr.setMaxFileSearchResultSize(nDefaultMaxResults);	
 
 	// If we do not have the products container
 	if( !oProductsTop ){
@@ -179,10 +217,11 @@ function processProduct(oProduct, oAssetMgr, aCompatibilitiesFilter) {
 		sleep(100);
 	}
 
+	var numSearchResults = oProductsTop.getNumChildContainers()
 	if (oProductsTop.inherits("DzProductHolderContainer"))
 	{
-		print("num products = " + oProductsTop.getNumChildContainers());
-		processContainer(oProductsTop, oAssetMgr, aCompatibilitiesFilter);
+		print("num products = " + numSearchResults);
+		processContainer(oProductsTop, oAssetMgr, aCompatibilitiesFilter, aArtistsFilter);
 	}
 
 	var oFile = DzFile(G_sScriptPath + "/output.jobs.csv");
@@ -193,6 +232,10 @@ function processProduct(oProduct, oAssetMgr, aCompatibilitiesFilter) {
 	}
 	oFile.close();
 
+	if (numSearchResults == nMaxResults)
+	{
+		print("WARNING: numSearchResults == nMaxResults, there may be more results than the limit of " + nMaxResults + " results.");
+	}
 	print("Script Completed.\n");
 
     return;
