@@ -15,7 +15,7 @@ if (App.platform() == 0)
 	sExportFolder = "CustomFolder"
 	sGodotProjectFolderPath = "C:/CustomRoot/FinalOutput"
 	sBlenderExecutablePath = "C:/Program Files/Blender Foundation/Blender 3.6/blender.exe"
-	sGeograftFilePath = "C:/dev/TopSecret/g9 geograft arms.duf"	
+//	sGeograftFilePath_G9 = "C:/dev/TopSecret/g9 geograft arms - no cap.duf"	
 }
 else if (App.platform() == 1)
 {
@@ -23,8 +23,11 @@ else if (App.platform() == 1)
 	sExportFolder = "Test"
 	sGodotProjectFolderPath = "/Volumes/SSD_2TB/Top Secret Project/FinalOutput"
 	sBlenderExecutablePath = "/Applications/Blender 3.6.app/Contents/MacOS/Blender"
-	sGeograftFilePath = sScriptPath + "/G9 geograft arms.duf"	
+//	sGeograftFilePath_G9 = sScriptPath + "/G9 geograft arms - no cap.duf"
 }
+sGeograftFilePath_G9 = sScriptPath + "/G9 geograft arms - no cap.duf"
+sGeograftFilePath_G8F = sScriptPath + "/G8F geograft arms - no cap.duf"
+sGeograftFilePath_G8M = sScriptPath + "/G8M geograft arms - no cap.duf"
 
 function Run_Exporter2(oBridge, sExportFilename, sAssetType, sRootFolder, sExportFolder, sProductName, sComponentName, arrayMorphList)
 {
@@ -139,6 +142,11 @@ function do_job(relative_asset_path)
 	// get selection
 	var pNode = Scene.getSelectedNode(0)
 
+	if (!pNode) {
+		print("ERROR: no primary node found, aborting.");
+		return;
+	}
+
 	// loop through and delete all attached children (except bones)
 	var aChildren = pNode.getNodeChildren()
 	for (j=0; j < aChildren.length; j++)
@@ -159,6 +167,18 @@ function do_job(relative_asset_path)
 	}
 
 	// merge arm geograft
+	if (Scene.getSelectedNode(0).getName().indexOf("Genesis8") != -1)
+	{
+		if (Scene.getSelectedNode(0).getName().indexOf("Female") != -1) {
+			sGeograftFilePath = sGeograftFilePath_G8F
+		}
+		else {
+			sGeograftFilePath = sGeograftFilePath_G8M
+		}
+	} else if (Scene.getSelectedNode(0).getName().indexOf("Genesis9") != -1) {
+		sGeograftFilePath = sGeograftFilePath_G9
+	}
+
 	print("DEBUG: sGeograftFilePath = " + sGeograftFilePath);
 	var sFullPath = oContentMgr.findFile(sGeograftFilePath)
 	if (sFullPath == "")
@@ -169,7 +189,13 @@ function do_job(relative_asset_path)
 	result = oContentMgr.openFile(sFullPath, true)
 	if (result)
 	{
-		geograft_node = Scene.findNodeByLabel("G9 arm geografts");
+		if (sFullPath.indexOf("G9") != -1) {
+			geograft_node = Scene.findNodeByLabel("G9 arm geografts");
+		} else if (sFullPath.indexOf("G8F") != -1) {
+			geograft_node = Scene.findNodeByLabel("G8F arm geografts");
+		} else if (sFullPath.indexOf("G8M") != -1) {
+			geograft_node = Scene.findNodeByLabel("G8M arm geografts");
+		}
 		pNode.addNodeChild(geograft_node);
 		geograft_node.setFollowTarget(pNode.getSkeleton());
 		print("geografted successfully");
