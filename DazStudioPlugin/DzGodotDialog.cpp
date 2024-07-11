@@ -162,6 +162,10 @@ DzGodotDialog::DzGodotDialog(QWidget* parent) :
 	 // Load Settings
 	 loadSavedSettings();
 
+	 // Daz Ultra
+	 m_WelcomeLabel->hide();
+	 setWindowTitle(tr("Godot Export Options"));
+
 }
 
 bool DzGodotDialog::loadSavedSettings()

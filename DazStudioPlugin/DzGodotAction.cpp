@@ -40,7 +40,7 @@
 #include "dzbridge.h"
 
 DzGodotAction::DzGodotAction() :
-	DzBridgeAction(tr("Daz To &Godot"), tr("Send the selected node to Godot."))
+	DzBridgeAction(tr("Send to &Godot..."), tr("Send the selected node to Godot."))
 {
 	m_nNonInteractiveMode = 0;
 	m_sAssetType = QString("Godot_Gltf_Blend");
