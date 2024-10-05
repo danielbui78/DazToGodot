@@ -90,7 +90,9 @@ DzGodotDialog::DzGodotDialog(QWidget* parent) :
 	 // Add Project Folder
 	 QHBoxLayout* godotProjectFolderLayout = new QHBoxLayout();
 	 m_wGodotProjectFolderEdit = new QLineEdit(this);
-	 m_wGodotProjectFolderButton = new QPushButton("...", this);
+	 m_wGodotProjectFolderEdit->setFixedHeight(wgtHeight);
+	 //m_wGodotProjectFolderButton = new QPushButton("...", this);
+	 m_wGodotProjectFolderButton = new DzBridgeBrowseButton(this);
 	 godotProjectFolderLayout->addWidget(m_wGodotProjectFolderEdit);
 	 godotProjectFolderLayout->addWidget(m_wGodotProjectFolderButton);
 	 connect(m_wGodotProjectFolderButton, SIGNAL(released()), this, SLOT(HandleSelectGodotProjectFolderButton()));
@@ -103,7 +105,9 @@ DzGodotDialog::DzGodotDialog(QWidget* parent) :
 	 // Select Blender Executable Path GUI
 	 QHBoxLayout* blenderExecutablePathLayout = new QHBoxLayout();
 	 m_wBlenderExecutablePathEdit = new QLineEdit(this);
-	 m_wBlenderExecutablePathButton = new QPushButton("...", this);
+	 m_wBlenderExecutablePathEdit->setFixedHeight(wgtHeight);
+	 //m_wBlenderExecutablePathButton = new QPushButton("...", this);
+	 m_wBlenderExecutablePathButton = new DzBridgeBrowseButton(this);
 	 blenderExecutablePathLayout->addWidget(m_wBlenderExecutablePathEdit);
 	 blenderExecutablePathLayout->addWidget(m_wBlenderExecutablePathButton);
 	 connect(m_wBlenderExecutablePathButton, SIGNAL(released()), this, SLOT(HandleSelectBlenderExecutablePathButton()));
@@ -112,13 +116,15 @@ DzGodotDialog::DzGodotDialog(QWidget* parent) :
 	 // Intermediate Folder
 	 QHBoxLayout* intermediateFolderLayout = new QHBoxLayout();
 	 intermediateFolderEdit = new QLineEdit(this);
-	 intermediateFolderButton = new QPushButton("...", this);
+	 intermediateFolderEdit->setFixedHeight(wgtHeight);
+	 //intermediateFolderButton = new QPushButton("...", this);
+	 intermediateFolderButton = new DzBridgeBrowseButton(this);
 	 intermediateFolderLayout->addWidget(intermediateFolderEdit);
 	 intermediateFolderLayout->addWidget(intermediateFolderButton);
 	 connect(intermediateFolderButton, SIGNAL(released()), this, SLOT(HandleSelectIntermediateFolderButton()));
 
 	 //  Add Intermediate Folder to Advanced Settings container as a new row with specific headers
-	 QFormLayout* advancedLayout = qobject_cast<QFormLayout*>(advancedWidget->layout());
+//	 QFormLayout* advancedLayout = qobject_cast<QFormLayout*>(advancedWidget->layout());
 	 if (advancedLayout)
 	 {
 		 advancedLayout->insertRow(1, "Blender Executable", blenderExecutablePathLayout);
